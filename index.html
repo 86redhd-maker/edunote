@@ -459,32 +459,6 @@ section#assess table.table:not(#assTable) {
   min-width: 160px;   /* 너무 크면 180~220px로 단계적으로 올리세요 */
   width: 190px;
 }  
-/* 카드 컨테이너 밖으로 못 나가게 */
-#assessSection, #minAchvSection {
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-}
-
-/* 표는 래퍼 안에서만 가로 스크롤 */
-#assTable-wrapper, #maTable-wrapper {
-  max-width: 100%;
-  overflow-x: auto;
-  padding-right: 8px;
-}
-
-/* 표 기본 */
-#assTable, #maTable { width: 100%; max-width: 100%; table-layout: auto; border-collapse: collapse; }
-#assTable th, #assTable td, #maTable th, #maTable td { padding: 8px; white-space: nowrap; }
-@media (max-width: 1200px){
-  #assTable th, #assTable td, #maTable th, #maTable td { white-space: normal; }
-}
-
-/* 보장지도: 과목(5열) 폭만 살짝 넓히기 — 과도하게 키우면 다시 튐 */
-#maTable td:nth-child(5) input { min-width: 170px; width: 190px; }
-/* 제목/내용도 여유가 필요하면 아래 수치만 살짝 키워도 됨 */
-#maTable td:nth-child(2) input { min-width: 230px; }
-#maTable td:nth-child(6) input { min-width: 230px; }
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -752,7 +726,7 @@ section#assess table.table:not(#assTable) {
   <!-- Assessments -->
   <section id="assess">
     <div class="grid">
-      <div id="assessSection" class="card" style="grid-column: span 12;">
+      <div class="card" style="grid-column: span 12;">
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <input class="input" id="asSubject" placeholder="과목" style="max-width:160px;">
           <input class="input" id="asClass" placeholder="반" style="max-width:120px;">
@@ -776,7 +750,7 @@ section#assess table.table:not(#assTable) {
   <!-- Minimum Achievement -->
   <section id="minachv">
     <div class="grid">
-      <div id="minAchvSection" class="card" style="grid-column: span 12;">
+      <div class="card" style="grid-column: span 12;">
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <input class="input" id="maSubject" placeholder="과목" style="max-width:160px;">
           <input class="input" id="maClass" placeholder="반" style="max-width:120px;">
@@ -1272,33 +1246,25 @@ byId("asImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
   });
   save(); renderAssess(); toast("가져오기 완료","평가가 반영되었습니다.");
 });
-// 평가 테이블을 '평가 컨트롤이 있는 카드' 내부에 생성/이동
 function ensureAssTable(){
-  const wrap   = document.getElementById("assTable-wrapper");
-  const table  = document.getElementById("assTable");
-  const anchor = document.getElementById("assessSection")   // ← 1)에서 단 id
-               || document.querySelector('#assessSection, #assess, section#assess, [data-section="assess"]')
-               || document.body;
+  const existed = document.getElementById("assTable-wrapper");
+  const table   = document.getElementById("assTable");
 
-  if (wrap) {
-    if (!anchor.contains(wrap)) anchor.appendChild(wrap);   // 카드 밖에 있으면 이동
+  // 1) 앵커(컨트롤있는 카드) 탐색 우선순위: 명시 ID → 컨트롤 근처 → 섹션 → fallback
+  const anchor =
+    document.getElementById("assControls") ||
+    (document.getElementById("assSubject") && document.getElementById("assSubject").closest(".card, section, div")) ||
+    (document.getElementById("assClass")   && document.getElementById("assClass").closest(".card, section, div"))   ||
+    document.querySelector('#assessSection, #assess, section#assess, [data-section="assess"]') ||
+    document.querySelector('[data-target="assess"]')?.closest('section') ||
+    document.querySelector('[data-target="평가"]')?.closest('section') ||
+    document.body;
+
+  // 2) 이미 존재하면 "카드 내부"로 이동만
+  if (existed){
+    if (!anchor.contains(existed)) anchor.appendChild(existed);
     return;
   }
-
-  const newWrap = document.createElement("div");
-  newWrap.id = "assTable-wrapper";
-  newWrap.innerHTML = `
-    <table id="assTable" class="table" style="margin-top:10px; width:100%">
-      <thead>
-        <tr>
-          <th>제목</th><th>유형</th><th>범위</th><th>날짜</th><th>반</th>
-          <th>과목</th><th>미응시</th><th>보충(일시/장)</th><th>메모</th><th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>`;
-  anchor.appendChild(newWrap);
-}
 
   // 3) 없으면 새로 생성해서 "카드 내부"에 삽입
   const wrap = document.createElement("div");
@@ -1660,8 +1626,6 @@ initAll();
 </body>
 
 </html>
-
-
 
 
 
