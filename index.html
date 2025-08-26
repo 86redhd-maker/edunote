@@ -1247,54 +1247,25 @@ byId("asImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
   });
   save(); renderAssess(); toast("가져오기 완료","평가가 반영되었습니다.");
 });
+// 평가 테이블을 '평가 카드(assessSection)' 내부에 생성/이동
 function ensureAssTable(){
-  if (document.getElementById("assTable")) return;
-  const host =
+  // 1) 앵커(평가 컨트롤이 있는 카드) 찾기
+  const anchor =
     document.getElementById("assessSection") ||
     document.getElementById("assess") ||
     document.querySelector('section#assess') ||
+    document.querySelector('[data-section="assess"]') ||
+    document.body; // 최후의 보루
+
+  // 2) 기존 래퍼/테이블이 있으면 카드 내부로 이동만
   const existed = document.getElementById("assTable-wrapper");
-  const table   = document.getElementById("assTable");
-
-  // 1) 앵커(컨트롤있는 카드) 탐색 우선순위: 명시 ID → 컨트롤 근처 → 섹션 → fallback
-  const anchor =
-    document.getElementById("assControls") ||
-    (document.getElementById("assSubject") && document.getElementById("assSubject").closest(".card, section, div")) ||
-    (document.getElementById("assClass")   && document.getElementById("assClass").closest(".card, section, div"))   ||
-    document.querySelector('#assessSection, #assess, section#assess, [data-section="assess"]') ||
-    document.querySelector('[data-target="assess"]')?.closest('section') ||
-    document.querySelector('[data-target="평가"]')?.closest('section') ||
-    document.body;
-
-  // 2) 이미 존재하면 "카드 내부"로 이동만
   if (existed){
     if (!anchor.contains(existed)) anchor.appendChild(existed);
     return;
   }
 
-  // 3) 없으면 새로 생성해서 "카드 내부"에 삽입
+  // 3) 없으면 새로 생성
   const wrap = document.createElement("div");
-wrap.id = "assTable-wrapper";
-wrap.innerHTML = `
-  <table id="assTable" class="table" style="margin-top:10px; width:100%">
-    <thead>
-      <tr>
-        <th>제목</th>
-        <th>유형</th>
-        <th>범위</th>
-        <th>날짜</th>
-        <th>반</th>
-        <th>과목</th>
-        <th>미응시</th>
-        <th>보충(일시/장)</th>
-        <th>메모</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-`;
-host.appendChild(wrap);
   wrap.id = "assTable-wrapper";
   wrap.innerHTML = `
     <table id="assTable" class="table" style="margin-top:10px; width:100%">
@@ -1653,3 +1624,4 @@ initAll();
 </body>
 
 </html>
+
