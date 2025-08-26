@@ -1193,37 +1193,34 @@ function ensureAssTable(){
   host.appendChild(wrap);
 }
 
-// 렌더
+// ★ 헤더 이중 표기 제거용: 테이블을 "정답 구조"로 매 렌더마다 재구성
 function renderAssess(){
   ensureAssTable();
+
   const table = document.getElementById("assTable");
   if (!table) return;
 
-   // ① thead를 우리가 쓰는 헤더로 '항상' 재구성  (시간/장소 없음)
-  const thead = table.tHead || table.createTHead();
-  thead.innerHTML = `
-    <tr>
-      <th>제목</th>
-      <th>유형</th>
-      <th>범위</th>
-      <th>날짜</th>
-      <th>반</th>
-      <th>과목</th>
-      <th>미응시</th>
-      <th>보충(일시/장)</th>
-      <th>메모</th>
-      <th></th>
-    </tr>
+  // 1) 테이블을 단 한 번에 정리: 시간/장소 없는 헤더 + 빈 tbody
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>제목</th>
+        <th>유형</th>
+        <th>범위</th>
+        <th>날짜</th>
+        <th>반</th>
+        <th>과목</th>
+        <th>미응시</th>
+        <th>보충(일시/장)</th>
+        <th>메모</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   `;
 
-  // ② tbody에 실수로 들어간 헤더행(th 포함 tr)만 제거
-  const tbody = table.tBodies[0] || table.createTBody();
-  [...tbody.querySelectorAll("tr")].forEach(tr => {
-    if (tr.querySelector("th")) tr.remove();
-  });
-
-  // ③ 내용 다시 그림
-  tbody.innerHTML = "";
+  // 2) 데이터 다시 그림
+  const tbody = table.tBodies[0];
   (state.assess || []).forEach(a => addAssessRow(a));
 }
 
@@ -1529,4 +1526,5 @@ initAll();
 </body>
 
 </html>
+
 
