@@ -380,6 +380,46 @@ select.input option{
 section#assess table.table:not(#assTable) {
   display: none !important;
 }  
+/* 평가 카드 자체에서 바깥으로 못 나가게 */
+#assessSection, #assess, section#assess, [data-section="assess"]{
+  position: relative;
+  overflow: hidden;           /* 둥근 모서리 밖으로 새지 않음 */
+  border-radius: 16px;        /* 카드 모서리 유지 (이미 있으면 생략 가능) */
+}
+
+/* 평가 테이블은 래퍼 안에서만 가로 스크롤 허용 */
+#assTable-wrapper{
+  max-width: 100%;
+  overflow-x: auto;           /* 폭이 좁을 때 가로 스크롤 */
+  padding-right: 8px;         /* 우측 버튼 겹침 방지용 여백 */
+}
+
+/* 테이블은 카드 폭 안에서만 그리기 */
+#assTable{
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+#assTable th, #assTable td{
+  padding: 8px;
+  white-space: nowrap;        /* 한 줄 표시(넘치면 래퍼가 스크롤) */
+}
+
+/* 화면이 많이 좁으면 줄바꿈 허용해 넘침 더 줄이기 */
+@media (max-width: 1200px){
+  #assTable th, #assTable td{ white-space: normal; }
+}
+/* 보장지도: 과목(5열) 더 넓게 */
+#maTable td:nth-child(5) input{
+  min-width: 180px;   /* 원하면 200~240px로 더 키워도 됨 */
+  width: 200px;
+}
+
+/* (참고) 제목/내용도 조금 더 여유 주고 싶으면: */
+#maTable td:nth-child(2) input{ min-width: 240px; }
+#maTable td:nth-child(6) input{ min-width: 240px; }
+  
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -1534,6 +1574,7 @@ initAll();
 </body>
 
 </html>
+
 
 
 
