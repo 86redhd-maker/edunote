@@ -373,7 +373,13 @@ select.input option{
 }
 
 /* 좁을 때 가로 스크롤 */
-#assTable-wrapper{ overflow-x:auto; }  
+#assTable-wrapper{ overflow-x:auto; } 
+/* 평가 섹션에서 id가 assTable이 아닌 표(옛 헤더표)는 감춤 */
+#assessSection table.table:not(#assTable),
+#assess table.table:not(#assTable),
+section#assess table.table:not(#assTable) {
+  display: none !important;
+}  
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -1200,30 +1206,18 @@ function renderAssess(){
   const table = document.getElementById("assTable");
   if (!table) return;
 
-  // (A) 같은 섹션(카드) 안에 남아있는 레거시 헤더용 표/행 제거
-  const host =
-    table.closest('#assessSection, #assess, section#assess') ||
-    table.parentElement;
+  // ★ 섹션 안의 중복 표(헤더만 있는 표/옛 표) 제거
+  const host = table.closest('#assessSection, #assess, section#assess') || table.parentElement;
   if (host){
-    // th 만 있는 표(헤더 표)나, tbody에 th가 있는 의사-헤더 행 제거
-    [...host.querySelectorAll('table')]
-      .filter(t => t !== table)
-      .forEach(t => {
-        const hasOnlyHeader =
-          (t.tBodies.length === 0 && t.tHead && t.tHead.querySelector('th')) ||
-          [...t.tBodies].some(tb => tb.querySelector('th'));
-        if (hasOnlyHeader) t.remove();
-      });
-
-    // 우리 테이블의 tbody에 실수로 들어간 th행도 제거
-    [...table.tBodies].forEach(tb => {
-      [...tb.querySelectorAll('tr')].forEach(tr=>{
-        if (tr.querySelector('th')) tr.remove();
-      });
+    [...host.querySelectorAll('table.table')].forEach(t=>{
+      if (t === table) return;
+      const onlyHeader = (t.tBodies.length === 0 && t.tHead && t.tHead.querySelector('th'));
+      const bodyHasTh  = [...t.tBodies].some(tb => tb.querySelector('th'));
+      if (onlyHeader || bodyHasTh) t.remove(); // ← 중복 헤더표 제거
     });
   }
 
-  // (B) 테이블을 "시간/장소 제외" 헤더 1줄 + 빈 tbody 로 재구성
+  // 우리가 쓰는 정답 헤더로 재구성
   table.innerHTML = `
     <thead>
       <tr>
@@ -1242,7 +1236,6 @@ function renderAssess(){
     <tbody></tbody>
   `;
 
-  // (C) 데이터 렌더
   const tbody = table.tBodies[0];
   (state.assess || []).forEach(a => addAssessRow(a));
 }
@@ -1251,6 +1244,17 @@ function renderAssess(){
 function addAssessRow(a){
   ensureAssTable?.();
   if (!a.id){ a.id = rid(); (state.assess ||= []).push(a); save(); }
+
+  // ★ 값 정규화: type / makeup(객체 → 문자열)
+  const normType = v =>
+    v==="단원"||v==="단원평가" ? "unit" :
+    v==="수행"||v==="수행평가" ? "performance" :
+    (v==="unit"||v==="performance" ? v : "unit");
+  a.type = normType(a.type);
+
+  const makeupVal = (typeof a.makeup === "string")
+    ? a.makeup
+    : (a.makeup ? `${a.makeup.date||""} ${a.makeup.place||""}`.trim() : "");
 
   const tr = document.createElement("tr");
   tr.innerHTML = `
@@ -1266,14 +1270,13 @@ function addAssessRow(a){
     <td><input class="input" data-field="class"  value="${a.class||''}"></td>
     <td><input class="input" data-field="subject"value="${a.subject||''}"></td>
     <td><input class="input" data-field="absent" value="${a.absent||''}" placeholder="홍길동,김…"></td>
-    <td><input class="input" data-field="makeup" value="${a.makeup||''}" placeholder="연도-월-일 / 장소"></td>
+    <td><input class="input" data-field="makeup" value="${makeupVal}" placeholder="연도-월-일 / 장소"></td>
     <td><input class="input" data-field="memo"   value="${a.memo||''}"></td>
     <td><button class="btn" data-field="del">삭제</button></td>
   `;
 
   document.querySelector("#assTable tbody").appendChild(tr);
 
-  // 요소 핸들
   const title  = tr.querySelector('input[data-field="title"]');
   const type   = tr.querySelector('select[data-field="type"]');
   const scope  = tr.querySelector('input[data-field="scope"]');
@@ -1285,15 +1288,8 @@ function addAssessRow(a){
   const memo   = tr.querySelector('input[data-field="memo"]');
   const delBtn = tr.querySelector('[data-field="del"]');
 
-  // 유형 정규화 + 초기 표시
-  const normType = v =>
-    v==="단원"||v==="단원평가" ? "unit" :
-    v==="수행"||v==="수행평가" ? "performance" :
-    (v==="unit"||v==="performance" ? v : "unit");
-  a.type = normType(a.type);
   if (type) type.value = a.type;
 
-  // 동기화
   const sync = () => {
     if (title)  a.title   = title.value;
     if (type)   a.type    = type.value;
@@ -1302,18 +1298,11 @@ function addAssessRow(a){
     if (cls)    a.class   = cls.value;
     if (sub)    a.subject = sub.value;
     if (absent) a.absent  = absent.value;
-    if (makeup) a.makeup  = makeup.value;
+    if (makeup) a.makeup  = makeup.value;   // ← 항상 문자열로 저장
     if (memo)   a.memo    = memo.value;
-
-    // 과거 데이터 호환: 시간/장소 필드 제거
-    delete a.time;
-    delete a.place;
-
     save(); renderCalendar?.(); drawDash?.();
   };
-  [title,type,scope,date,cls,sub,absent,makeup,memo].forEach(el=>{
-    if(el) el.addEventListener("change", sync);
-  });
+  [title,type,scope,date,cls,sub,absent,makeup,memo].forEach(el=>{ if(el) el.addEventListener("change", sync); });
 
   if (delBtn) delBtn.onclick = () => {
     if (confirm("삭제할까요?")) {
@@ -1545,6 +1534,7 @@ initAll();
 </body>
 
 </html>
+
 
 
 
