@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>교무행정 · 따뜻한 교사용 MVP+</title>
+<meta name="description" content="교사용 진도/계획·평가/보충·행사 메모·업무·자료실 통합 데모(오프라인 단일 파일)" />
+<style>
+/* ---------------- Warm Comfortable Theme Tokens ---------------- */
+:root{
+  --hue: 30; /* warm default */
+  --accent: hsl(var(--hue), 45%, 48%);        /* muted warm */
+  --accent-strong: hsl(var(--hue), 55%, 42%); /* for primary buttons */
+  --bg: #FAF9F6;          /* ivory */
+  --surface: #FDFBF7;     /* slightly lighter card bg */
+  --card: #FFFFFF;
+  --text: #3E3A39;        /* warm dark brown/grey */
+  --muted: #7A6E66;
+  --border: #E6E0DA;
+  --shadow: 0 10px 28px rgba(100, 72, 40, .08);
+  --radius: 16px;
+  --focus: 0 0 0 3px rgba(216,168,87,.35); /* mustard focus */
+}
+/* Dark mode — warm espresso tone */
+[data-theme="dark"]{
+  --bg: #2F2A26;          /* espresso */
+  --surface: #352F2B;
+  --card: #3A3430;
+  --text: #EDE9E3;
+  --muted: #A29E9A;
+  --border: #4A433F;
+  --shadow: 0 12px 34px rgba(0,0,0,.4);
+  --focus: 0 0 0 3px rgba(234,179,8,.35);
+}
+/* Theme presets (color only; layout handled via body classes) */
+body.theme-classic{ --hue: 212; }   /* deep navy */
+body.theme-arcade{ --hue: 265; }    /* soft lilac */
+body.theme-soft{ --hue: 170; }      /* sage green */
+
+/* ---------------- Base ---------------- */
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family: "Pretendard", ui-rounded, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "NanumSquare", "Spoqa Han Sans Neo", sans-serif;
+  line-height:1.6; letter-spacing: -.2px;
+}
+a{ color: var(--accent-strong); text-decoration: none }
+a:hover{ text-decoration: underline }
+:focus-visible{ outline: var(--focus) }
+
+.container{ max-width: 1200px; margin: 0 auto; padding: 10px 20px; }
+main{ max-width: 1200px; margin: 24px auto 96px; padding: 0 20px; }
+.card{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+.grid{ display:grid; gap:14px; grid-template-columns: repeat(12,1fr); }
+
+.btn{ appearance:none; border:1px solid var(--border); background: var(--surface); color: var(--text);
+  padding:10px 14px; border-radius: 999px; cursor:pointer; font-weight:700; box-shadow: var(--shadow); transition:.15s;
+}
+.btn:hover{ transform: translateY(-1px) }
+.btn:active{ transform: translateY(0) }
+.btn-primary{ background: var(--accent-strong); border:0; color:#fff; box-shadow: 0 10px 22px rgba(216,168,87,.25) }
+.input, select, textarea{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--card); color: var(--text) }
+label{ font-size:12px; color: var(--muted); display:block; margin-bottom:6px }
+.small{ font-size:12px; color: var(--muted) }
+.badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border); background: var(--surface) }
+.kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--surface); border:1px solid var(--border); padding:2px 6px; border-radius:6px; }
+
+section{ display:none }
+section.active{ display:block }
+
+/* ---------------- Navigation Layouts ---------------- */
+.navlink{ padding:8px 12px; border-radius: 10px; border:1px solid var(--border); background: var(--surface); cursor:pointer; font-weight:800 }
+.navlink.active{ background: var(--accent); color:#fff; border-color: transparent }
+
+/* classic: top nav */
+body.theme-classic header.top{
+  position: sticky; top:0; z-index:40;
+  background: linear-gradient(180deg, rgba(255,253,248,.85), rgba(255,253,248,.65));
+  border-bottom:1px solid var(--border); backdrop-filter: blur(6px);
+}
+body.theme-classic header.top .nav{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px }
+
+/* arcade: bottom dock (color only; soft lilac, still warm) */
+body.theme-arcade header.top{ display:none }
+body.theme-arcade .dock{
+  position: fixed; left:50%; transform: translateX(-50%);
+  bottom: 14px; z-index:50; background:#ffffffee; border:1px solid var(--border); border-radius: 14px;
+  display:flex; gap:6px; padding:8px; box-shadow: var(--shadow);
+}
+[data-theme="dark"] .dock{ background: #2f2a26ee }
+
+/* soft: left sidebar */
+body.theme-soft header.side{ position: fixed; left:0; top:0; bottom:0; width: 220px; border-right:1px solid var(--border);
+  background: #fffaf3cc; backdrop-filter: blur(8px); z-index:40;
+}
+[data-theme="dark"] body.theme-soft header.side{ background: #2f2a26cc }
+body.theme-soft .side .inner{ padding: 12px }
+body.theme-soft main{ margin-left:220px }
+
+/* ---------------- Widgets ---------------- */
+.table{ width:100%; border-collapse: collapse; }
+.table th,.table td{ border-bottom:1px solid var(--border); padding:8px 8px; text-align:left; vertical-align: top; }
+.table th{ color: var(--muted); font-weight:700; font-size:12px }
+.table tr:hover td{ background: var(--surface) }
+
+.calendar{ border:1px solid var(--border); border-radius: var(--radius); overflow:hidden; }
+.calendar-header{ display:flex; justify-content: space-between; align-items:center; padding:10px 12px; background: var(--surface); }
+.calendar-grid{ display:grid; grid-template-columns: repeat(7,1fr); }
+.calendar-grid .day-name, .calendar-grid .cell{ padding:10px; border-bottom:1px solid var(--border); border-right:1px solid var(--border); min-height:90px; }
+.calendar-grid .day-name{ background:#fff; font-weight:700; text-align:center; }
+.calendar-grid .cell:nth-child(7n){ border-right:0 }
+.event{ background: #fff; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px; padding:6px 8px; margin-bottom:6px; font-size:12px; cursor:pointer }
+
+.kanban{ display:grid; gap:12px; grid-template-columns: repeat(3, 1fr) }
+.column{ background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding:10px; min-height:240px }
+.task{ background: #fff; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:8px; cursor:grab }
+.progress{ height:6px; border-radius:999px; background:#e5e7eb; overflow:hidden; margin-top:8px }
+.progress>span{ display:block; height:100%; background: var(--accent) }
+
+.preview{ border:1px solid var(--border); border-radius:12px; padding:8px; background: var(--surface); max-height:320px; overflow:auto }
+.file-card{ display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--border); border-radius:12px; padding:10px; background: #fff; }
+.file-meta{ font-size:12px; color: var(--muted) }
+.pin{ color: var(--accent-strong); font-weight:900 }
+
+.chart{ width:100%; height:240px; border:1px solid var(--border); border-radius: var(--radius); background: var(--card); position:relative }
+.chart canvas{ width:100%; height:100% }
+
+/* responsive */
+@media (max-width: 960px){
+  .grid{ grid-template-columns: 1fr }
+  .kanban{ grid-template-columns: 1fr }
+  body.theme-soft header.side{ width: 200px }
+  body.theme-soft main{ margin-left: 200px }
+  .dock{ transform: translateX(-50%) scale(.98) }
+}
+
+/* select 가시성 강제: 라이트/다크 모두 글자 보이게 */
+select.input{
+  color: var(--text) !important;
+  background-color: var(--card) !important;
+  min-height: 36px; /* 너무 낮아서 안 보이는 경우 방지 */
+  line-height: 1.2;
+  opacity: 1;
+}
+select.input option{
+  color: #000; background: #fff;
+}
+[data-theme="dark"] select.input option{
+  color: #EDE9E3; background: #2F2A26;
+}
+/* ==== SELECT 라벨 강제 표시 복구 ==== */
+select.input{
+  /* 글자 보이기 */
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important; /* 일부 크롬/엣지 */
+  text-shadow: none !important;
+  text-indent: 0 !important;
+
+  /* 배경/테두리 기본 */
+  background-color: var(--card) !important;
+  background-image: none !important;
+
+  /* 시스템 기본 UI로 되돌림 (커스텀 화살표/appearance 해제) */
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+
+  /* 안 보이게 만드는 속성들 무효화 */
+  opacity: 1 !important;
+  filter: none !important;
+
+  /* 가시성 보조 */
+  min-height: 36px !important;
+  line-height: 1.2 !important;
+  padding-right: 28px !important; /* 화살표 공간 */
+  width: 100% !important; /* 너무 좁아서 라벨이 잘리는 경우 방지 */
+  font-size: inherit !important;
+}
+
+[data-theme="dark"] select.input{
+  color: #EDE9E3 !important;
+  -webkit-text-fill-color: #EDE9E3 !important;
+  background-color: #2F2A26 !important;
+}
+
+select.input option{
+  color: #111 !important; background: #fff !important;
+}
+[data-theme="dark"] select.input option{
+  color: #EDE9E3 !important; background: #2F2A26 !important;
+}
+/* 보장지도 모드 드롭다운: 외부 스타일 영향 완전 차단 + 기본값 복원 */
+#maTable select[data-field="mode"]{
+  all: revert;                 /* 상속/전역 규칙을 깔끔하게 되돌림 (근본 해결) */
+  font: inherit;
+  color: var(--text);
+  background: var(--card);
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 6px;
+  width: 100%;
+}
+[data-theme="dark"] #maTable select[data-field="mode"]{
+  color: #EDE9E3;
+  background: #2F2A26;
+  border-color: #4A433F;
+}
+/* 보장지도 모드 드롭다운 완전 리셋 및 가시성 강제 */
+#maTable select[data-field="mode"] {
+  all: unset; /* 전역 스타일 초기화 */
+  font: inherit;
+  color: var(--text) !important;
+  background-color: var(--card) !important;
+  border: 1px solid var(--line, #ccc);
+  border-radius: 4px;
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  -webkit-text-fill-color: currentColor !important;
+  padding: 4px 8px;
+  min-width: 120px;  /* 너무 좁아 라벨이 안 보이는 문제 방지 */
+  min-height: 32px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] #maTable select[data-field="mode"] {
+  color: #EDE9E3 !important;
+  background-color: #2F2A26 !important;
+  border-color: #4A433F;
+}
+/* 1) 표는 자동 레이아웃으로 되돌림 */
+#maTable, #assTable, #evalTable { table-layout: auto; width: 100%; }
+
+/* 2) 입력/셀 공통: 셀 안에서만 꽉 차고, 밖으로 안 튀어나가게 */
+#maTable input, #maTable select,
+#assTable input, #assTable select,
+#evalTable input, #evalTable select {
+  width: 100%;
+  max-width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+/* 3) 모드 드롭다운만 살짝 좁게(너무 넓지 않게 고정) */
+#maTable td:nth-child(1) select[data-field="mode"]{
+  width: 96px;
+  min-width: 90px;
+  max-width: 120px;
+}
+
+/* 4) 제목/내용 칸은 넓게 쓰되, 표 밖으로는 안 넘치게 */
+#maTable td:nth-child(2) input { min-width: 220px; } /* 제목 */
+#maTable td:nth-child(7) input { min-width: 220px; } /* 내용 */
+
+/* 5) 작은 숫자칸은 슬림하게 */
+#maTable td:nth-child(10) input,
+#maTable td:nth-child(11) input,
+#maTable td:nth-child(12) input { max-width: 72px; text-align: center; }
+
+/* 6) 표 컨테이너가 좁을 때는 가로 스크롤 허용 (튀어나감 방지) */
+#maTable-wrapper, #assTable-wrapper, #evalTable-wrapper { overflow-x: auto; }
+
+/* 7) 평가 탭: 단원/수행 드롭다운 최소 폭만 보장 (다른 건 자동) */
+#assTable select, #evalTable select { min-width: 120px; }
+
+/* 보장지도 표: 자동 레이아웃 + 필드 폭 안정화 */
+#maTable { table-layout: auto; width: 100%; }
+#maTable input, #maTable select { width:100%; max-width:100%; height:34px; box-sizing:border-box; }
+
+/* 모드 드롭다운 슬림 */
+#maTable td:nth-child(1) select[data-field="mode"]{ width:92px; min-width:88px; max-width:120px; }
+
+/* 제목/내용 기본 폭, 대상 넓게 */
+#maTable td:nth-child(2) input{ min-width:220px; }  /* 제목 */
+#maTable td:nth-child(6) input{ min-width:220px; }  /* 내용 */
+#maTable td:nth-child(7) input{ min-width:320px; }  /* 대상(확장) */
+
+/* 삭제 버튼 칸 */
+#maTable td:last-child button{ width:60px; }
+
+/* 표가 좁을 때 가로 스크롤 */
+#maTable-wrapper{ overflow-x:auto; }
+
+/* === 보장지도 표: 열 폭 초기화(예전 nth-child 폭 지정 무력화) === */
+#maTable { table-layout: auto; width: 100%; }
+#maTable th, #maTable td { width: auto !important; }
+
+/* 입력 필드 공통 */
+#maTable input, #maTable select{
+  width: 100%;
+  max-width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+/* 모드만 슬림, 대상은 넉넉히 */
+#maTable td:nth-child(1) select[data-field="mode"]{ width: 92px; min-width: 88px; max-width: 120px; }
+#maTable td:nth-child(2) input{ min-width: 200px; }  /* 제목 */
+#maTable td:nth-child(6) input{ min-width: 200px; }  /* 내용 */
+#maTable td:nth-child(7) input{ min-width: 260px; }  /* 대상 */
+#maTable td:last-child button{ width: 60px; }
+
+/* 컨테이너보다 넓으면 가로 스크롤 */
+#maTable-wrapper{ overflow-x: auto; }
+
+/* 1) 카드(보장지도 섹션) 밖으로 새지 못하게 */
+#minAchvSection, #minAchv, [data-section="min"] {
+  position: relative;
+  overflow: hidden;         /* 둥근 모서리 밖으로 못 나가게 */
+  border-radius: 16px;      /* 카드 모양 유지 (이미 있으면 생략) */
+}
+
+/* 2) 테이블은 래퍼 안에서만 좌우 스크롤 허용 */
+#maTable-wrapper{
+  max-width: 100%;
+  overflow-x: auto;         /* 좁은 화면에서 가로 스크롤 */
+  padding-right: 8px;       /* 오른쪽 가장자리 여백 (버튼 겹침 방지) */
+}
+
+/* 3) 테이블이 부모 폭을 넘지 않도록 */
+#maTable{
+  width: 100%;
+  table-layout: auto;       /* 자동 폭 계산(고정 레이아웃 때문에 넘치던 것 방지) */
+  border-collapse: collapse;
+}
+#maTable th, #maTable td{
+  padding: 8px;
+  white-space: nowrap;      /* 기본은 한 줄 표시 */
+}
+#maTable input, #maTable select{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+/* 4) 오른쪽 마지막(삭제) 칸은 고정 폭 + 버튼 정렬 */
+#maTable td:last-child{ width: 72px; }
+#maTable td:last-child .btn{
+  display: block;
+  width: 64px;
+  margin-left: auto;        /* 오른쪽 정렬 */
+  margin-right: 0;
+}
+
+/* 5) 너무 좁은 화면에서는 줄바꿈 허용해 넘침 더 줄이기 */
+@media (max-width: 1200px){
+  #maTable th, #maTable td{ white-space: normal; }
+}
+</style>
+</head>
+<body class="theme-classic" data-theme="light">
+<!-- Top header (classic & default) -->
+<header class="top" id="headerTop">
+  <div class="container">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background: var(--accent); box-shadow: var(--shadow)"></div>
+        <div>
+          <div style="font-weight:900">교무행정 · 따뜻한 교사용</div>
+          <div class="small">오프라인 단일 파일 · localStorage 저장</div>
+        </div>
+      </div>
+      <nav class="nav" id="navTop">
+        <button class="navlink active" data-target="dash">대시보드</button>
+        <button class="navlink" data-target="calendar">일정</button>
+        <button class="navlink" data-target="tasks">업무</button>
+        <button class="navlink" data-target="files">자료실</button>
+        <button class="navlink" data-target="progress">진도</button>
+        <button class="navlink" data-target="plans">계획</button>
+        <button class="navlink" data-target="assess">평가·보충</button>
+        <button class="navlink" data-target="minachv">보장지도</button>
+        <button class="navlink" data-target="settings">설정</button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- Soft sidebar header -->
+<header class="side" id="headerSide" style="display:none">
+  <div class="inner">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <div style="width:34px;height:34px;border-radius:10px;background: var(--accent); box-shadow: var(--shadow)"></div>
+      <div style="font-weight:900">교사용 허브</div>
+    </div>
+    <nav id="navSide" style="display:grid; gap:6px;">
+      <button class="navlink active" data-target="dash">🏠 대시보드</button>
+      <button class="navlink" data-target="calendar">📅 일정</button>
+      <button class="navlink" data-target="tasks">🗂️ 업무</button>
+      <button class="navlink" data-target="files">📁 자료실</button>
+      <button class="navlink" data-target="progress">📈 진도</button>
+      <button class="navlink" data-target="plans">📝 계획</button>
+      <button class="navlink" data-target="assess">✅ 평가·보충</button>
+      <button class="navlink" data-target="minachv">🌱 보장지도</button>
+      <button class="navlink" data-target="settings">⚙️ 설정</button>
+    </nav>
+  </div>
+</header>
+
+<!-- Arcade bottom dock -->
+<div id="dock" class="dock" style="display:none">
+  <button class="navlink active" data-target="dash">대시보드</button>
+  <button class="navlink" data-target="calendar">일정</button>
+  <button class="navlink" data-target="tasks">업무</button>
+  <button class="navlink" data-target="files">자료실</button>
+  <button class="navlink" data-target="progress">진도</button>
+  <button class="navlink" data-target="plans">계획</button>
+  <button class="navlink" data-target="assess">평가</button>
+  <button class="navlink" data-target="minachv">보장지도</button>
+  <button class="navlink" data-target="settings">설정</button>
+</div>
+
+<main>
+  <!-- Dashboard -->
+  <section id="dash" class="active">
+    <div class="grid">
+      <div class="card" style="grid-column: span 7;">
+        <h3>이번 주 수업·평가·보충·행사</h3>
+        <div id="dashWeek"></div>
+      </div>
+      <div class="card" style="grid-column: span 5;">
+        <h3>임박 업무</h3>
+        <div id="dashDue"></div>
+      </div>
+      <div class="card" style="grid-column: span 12;">
+        <h3>요약 지표</h3>
+        <div class="grid">
+          <div class="chart" style="grid-column: span 6;"><canvas id="chTask"></canvas></div>
+          <div class="chart" style="grid-column: span 6;"><canvas id="chGap"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calendar -->
+  <section id="calendar">
+    <div class="grid">
+      <div class="card" style="grid-column: span 8;">
+        <div class="calendar">
+          <div class="calendar-header">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn" id="prevM">◀</button>
+              <div id="monthLabel" style="font-weight:900"></div>
+              <button class="btn" id="nextM">▶</button>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select id="calFilter">
+                <option value="ALL">표시: 전체</option>
+                <option>수업</option><option>평가</option><option>보충</option><option>행사</option><option>업무</option>
+              </select>
+            </div>
+          </div>
+          <div class="calendar-grid" id="calGrid"></div>
+        </div>
+      </div>
+      <div class="card" style="grid-column: span 4;">
+        <h3>학교 행사</h3>
+        <div style="display:grid; gap:8px;">
+          <div><label>행사명</label><input class="input" id="evTitle" placeholder="수학여행, 체험학습 등"/></div>
+          <div><label>날짜</label><input class="input" id="evDate" type="date"/></div>
+          <div><label>설명</label><textarea class="input" id="evMemo" rows="2"></textarea></div>
+          <details>
+            <summary class="small">반별 특화 메모</summary>
+            <div style="display:grid; gap:6px; margin-top:6px;">
+              <div><input class="input" id="evClass" placeholder="예: 1-1"/></div>
+              <div><input class="input" id="evClassMemo" placeholder="예: 서울 코스 10시 출발"/></div>
+              <button class="btn" id="addClassMemo">추가</button>
+              <div class="small" id="evClassMemoList"></div>
+            </div>
+          </details>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" id="addEvent">등록</button>
+            <button class="btn" id="clearEvent">초기화</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tasks -->
+  <section id="tasks">
+    <div class="grid">
+      <div class="card" style="grid-column: span 8;">
+        <div class="kanban">
+          <div class="column" data-col="todo">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><strong>할 일</strong><span class="small" id="cntTodo"></span></div>
+            <div class="col-body" id="col-todo"></div>
+          </div>
+          <div class="column" data-col="doing">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><strong>진행</strong><span class="small" id="cntDoing"></span></div>
+            <div class="col-body" id="col-doing"></div>
+          </div>
+          <div class="column" data-col="done">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><strong>완료</strong><span class="small" id="cntDone"></span></div>
+            <div class="col-body" id="col-done"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="grid-column: span 4;">
+        <h3>업무 추가</h3>
+        <div style="display:grid; gap:8px;">
+          <div><label>업무명</label><input class="input" id="taskTitle" placeholder="가정통신문 배포"/></div>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1"><label>역할</label><select id="taskRole" class="input"><option>담임</option><option>부장</option><option>교과</option><option>행정</option></select></div>
+            <div style="flex:1"><label>마감</label><input class="input" id="taskDue" type="date"/></div>
+          </div>
+          <div><label>진행률</label><input id="taskProg" type="range" min="0" max="100" value="0" oninput="byId('progVal').innerText=this.value+'%'"/><div class="small">현재: <span id="progVal">0%</span></div></div>
+          <div><label>메모</label><textarea id="taskMemo" rows="3" class="input"></textarea></div>
+          <div style="display:flex; gap:8px;">
+            <button id="addTask" class="btn btn-primary" style="flex:1">추가</button>
+            <button id="clearTask" class="btn" style="flex:1">초기화</button>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button class="btn" id="notifySoon">D-3 알림 테스트</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Files -->
+  <section id="files">
+    <div class="grid">
+      <div class="card" style="grid-column: span 7;">
+        <h3>업로드</h3>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap;">
+          <input type="file" id="fileInput" multiple />
+          <button class="btn" id="uploadFile">업로드</button>
+          <input class="input" id="fileSearch" placeholder="검색(파일명/댓글)" style="max-width: 220px;" />
+          <select id="fileType" class="input" style="max-width: 160px;">
+            <option value="ALL">유형: 전체</option>
+            <option>이미지</option><option>문서</option><option>영상</option><option>오디오</option><option>기타</option>
+          </select>
+          <select id="fileSort" class="input" style="max-width: 160px;">
+            <option value="recent">정렬: 최신 업로드</option>
+            <option value="name">이름</option>
+            <option value="type">유형</option>
+            <option value="size">용량</option>
+            <option value="opened">최근 열람</option>
+            <option value="comments">댓글 수</option>
+          </select>
+          <button class="btn" id="toggleView">보기: 리스트</button>
+        </div>
+        <div id="fileList" style="margin-top: 12px;"></div>
+      </div>
+      <div class="card" style="grid-column: span 5;">
+        <h3>미리보기</h3>
+        <div id="filePreview" class="preview">파일을 선택하세요.</div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn" id="downloadFile">다운로드</button>
+          <button class="btn" id="pinFile">핀 고정/해제</button>
+          <button class="btn" id="delFile">삭제</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Progress -->
+  <section id="progress">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="pYear" class="input" style="max-width:120px;"></select>
+          <select id="pTerm" class="input" style="max-width:120px;"><option value="1">1학기</option><option value="2">2학기</option></select>
+          <input class="input" id="pSubject" placeholder="과목 (예: 국어)" style="max-width:160px;" />
+          <input class="input" id="pClass" placeholder="반 (예: 1-1)" style="max-width:120px;" />
+          <button class="btn" id="pFilter">조회</button>
+          <button class="btn" id="pAdd">행 추가</button>
+          <button class="btn" id="pCopy">다른 반으로 복사</button>
+          <button class="btn" id="pExport">CSV 내보내기</button>
+          <label class="btn" for="pImport">CSV 가져오기</label>
+          <input id="pImport" type="file" accept=".csv" style="display:none" />
+        </div>
+        <table class="table" id="pTable" style="margin-top:10px">
+          <thead><tr>
+            <th>주차</th><th>날짜</th><th>차시</th><th>단원/범위</th><th>목표</th><th>활동/자료</th><th>과제</th><th>메모</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card" style="grid-column: span 12;">
+        <h3>주간 반별 격차</h3>
+        <div class="chart"><canvas id="chWeeklyGap"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Plans -->
+  <section id="plans">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="plYear" class="input" style="max-width:120px;"></select>
+          <select id="plTerm" class="input" style="max-width:120px;"><option value="1">1학기</option><option value="2">2학기</option></select>
+          <input class="input" id="plSubject" placeholder="과목" style="max-width:160px;" />
+          <input class="input" id="plClass" placeholder="반" style="max-width:120px;" />
+          <button class="btn" id="plAdd">차시 추가</button>
+          <button class="btn" id="plAuto">주차→차시 자동 배분</button>
+          <button class="btn" id="plCopy">다른 반으로 복사</button>
+          <button class="btn" id="plExport">CSV 내보내기</button>
+          <label class="btn" for="plImport">CSV 가져오기</label>
+          <input id="plImport" type="file" accept=".csv" style="display:none" />
+        </div>
+        <table class="table" id="plTable" style="margin-top:10px">
+          <thead><tr>
+            <th>차시</th><th>주차</th><th>날짜</th><th>목표</th><th>핵심개념</th><th>준비물</th><th>자료링크</th><th>평가방법</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Assessments -->
+  <section id="assess">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input class="input" id="asSubject" placeholder="과목" style="max-width:160px;">
+          <input class="input" id="asClass" placeholder="반" style="max-width:120px;">
+          <button class="btn" id="asAdd">평가 추가</button>
+          <button class="btn" id="asExport">CSV 내보내기</button>
+          <label class="btn" for="asImport">CSV 가져오기</label>
+          <input id="asImport" type="file" accept=".csv" style="display:none" />
+        </div>
+        <table class="table" id="asTable" style="margin-top:10px">
+          <thead><tr>
+            <th>제목</th><th>유형</th><th>범위</th><th>날짜</th><th>반</th><th>과목</th><th>미응시</th><th>보충(일/시/장)</th><th>메모</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Minimum Achievement -->
+  <section id="minachv">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input class="input" id="maSubject" placeholder="과목" style="max-width:160px;">
+          <input class="input" id="maClass" placeholder="반" style="max-width:120px;">
+          <button class="btn" id="maAdd">세션 추가</button>
+          <button class="btn" id="maExport">CSV 내보내기</button>
+          <label class="btn" for="maImport">CSV 가져오기</label>
+          <input id="maImport" type="file" accept=".csv" style="display:none" />
+        </div>
+        <table class="table" id="maTable" style="margin-top:10px">
+          <thead><tr>
+            <th>모드</th><th>제목</th><th>날짜</th><th>시간</th><th>반</th><th>과목</th><th>내용</th><th>대상</th><th>후속평가</th><th>참여</th><th>재평가</th><th>개선</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="settings">
+    <div class="grid">
+      <div class="card" style="grid-column: span 6;">
+        <h3>테마</h3>
+        <div style="display:grid; gap:8px;">
+          <div><label>포인트 색상(Hue)</label><input type="range" id="hue" min="0" max="360" value="30" oninput="setHue(this.value)"/></div>
+          <div>
+            <label>프리셋(레이아웃 유지, 색상만 변경)</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn" onclick="setPreset('classic')">Classic(네이비)</button>
+              <button class="btn" onclick="setPreset('arcade')">Arcade(라일락)</button>
+              <button class="btn" onclick="setPreset('soft')">Soft(세이지)</button>
+            </div>
+          </div>
+          <div>
+            <label>밝기</label>
+            <div style="display:flex; gap:8px;">
+              <button class="btn" onclick="toggleDark(false)">밝은 모드</button>
+              <button class="btn" onclick="toggleDark(true)">다크 모드</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="grid-column: span 6;">
+        <h3>백업/복원</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="exportJSON">JSON 백업</button>
+          <label class="btn" for="importJSON">JSON 복원</label>
+          <input id="importJSON" type="file" accept="application/json" style="display:none">
+          <button class="btn" id="resetAll">초기화</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" style="position: fixed; right: 16px; bottom: 16px; display:flex; flex-direction:column; gap:10px; z-index:100;"></div>
+
+<script>
+/* ---------------- State & Utils ---------------- */
+const STORE="teacher-mvpplus-v1";
+let state=load();
+function load(){ try{ const raw=localStorage.getItem(STORE); if(!raw) return defaultState(); const parsed=JSON.parse(raw); return Object.assign(defaultState(), parsed);}catch{return defaultState()} }
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)) }
+function defaultState(){
+  const today=new Date().toISOString().slice(0,10);
+  return {
+    settings:{ preset:"classic", dark:false, hue:30 },
+    events:[{id:rid(), title:"개학식", date:today, memo:"강당", classMemos:{}, createdAt:now() }],
+    tasks:[{id:rid(), title:"가정통신문 배포", role:"담임", due:addDays(3), progress:10, memo:"1학년 전반", status:"todo", createdAt:now()}],
+    files:[],
+    progress:[],
+    plans:[],
+    assessments:[],
+    min_achievement:[]
+  }
+}
+function rid(){
+    try{
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+    }catch(e){}
+    // 구형 브라우저용 폴백
+    const s = () => Math.random().toString(36).slice(2,10);
+    return `id-${Date.now().toString(36)}-${s()}${s()}`;
+  }
+function now(){ return new Date().toISOString() }
+function addDays(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10) }
+function byId(id){ return document.getElementById(id) }
+function fmtDate(s){ if(!s) return ""; const d=new Date(s); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function dday(due){ if(!due) return ""; const d=new Date(due); const t=new Date(); t.setHours(0,0,0,0); const diff=Math.ceil((d-t)/86400000); if(diff>0) return `D-${diff}`; if(diff===0) return "D-day"; return `D+${Math.abs(diff)}` }
+function toast(msg, sub=""){ const wrap=byId("toast"); const el=document.createElement("div"); el.className="card"; el.innerHTML=`<strong>${msg}</strong><div class="small">${sub}</div>`; wrap.appendChild(el); setTimeout(()=>el.remove(),4500) }
+
+/* ---------------- Theme & Layout ---------------- */
+function applyHue(hue){
+  const h = Number(hue);
+  document.documentElement.style.setProperty('--hue', h);
+  document.documentElement.style.setProperty('--accent', `hsl(${h}, 45%, 48%)`);
+  document.documentElement.style.setProperty('--accent-strong', `hsl(${h}, 55%, 42%)`);
+}
+function setHue(v){
+  state.settings.hue = Number(v);
+  applyHue(state.settings.hue);
+  save();
+}
+function toggleDark(d){ document.body.setAttribute('data-theme', d?'dark':'light'); state.settings.dark=!!d; save() }
+function setPreset(p){
+  state.settings.preset = p; 
+  save();
+
+  // 레이아웃 클래스 스위칭
+  document.body.classList.remove("theme-classic","theme-arcade","theme-soft");
+  if(p==="classic") document.body.classList.add("theme-classic");
+  if(p==="arcade")  document.body.classList.add("theme-arcade");
+  if(p==="soft")    document.body.classList.add("theme-soft");
+
+  // 레이아웃 영역 표시 전환
+  byId("headerTop").style.display  = p==="classic" ? "block" : "none";
+  byId("headerSide").style.display = p==="soft"    ? "block" : "none";
+  byId("dock").style.display       = p==="arcade"  ? "flex"  : "none";
+
+  // 프리셋별 Hue 지정 + 즉시 적용
+  const hue = p==="classic" ? 212 : p==="arcade" ? 265 : 170;
+  state.settings.hue = hue;
+  applyHue(hue);
+  save();
+}
+/* nav binding */
+function bindNav(container){
+  if(!container) return;
+  Array.from(container.querySelectorAll("[data-target]")).forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("main section").forEach(s=> s.classList.remove("active"));
+      document.querySelectorAll("[data-target]").forEach(b=> b.classList.remove("active"));
+      byId(btn.dataset.target).classList.add("active");
+      Array.from(document.querySelectorAll("[data-target='"+btn.dataset.target+"']")).forEach(b=> b.classList.add("active"));
+      if(btn.dataset.target==="dash") drawDash();
+      if(btn.dataset.target==="calendar") renderCalendar();
+      if(btn.dataset.target==="tasks") renderKanban();
+      if(btn.dataset.target==="files") renderFiles();
+      if(btn.dataset.target==="progress") { renderProgress(); drawWeeklyGap(); }
+      if(btn.dataset.target==="plans") renderPlans();
+      if(btn.dataset.target==="assess") renderAssess();
+      if(btn.dataset.target==="minachv") renderMinAchv();
+    })
+  })
+}
+bindNav(byId("navTop")); bindNav(byId("navSide")); bindNav(byId("dock"));
+
+/* ---------------- Dashboard ---------------- */
+function drawDash(){
+  // Week range
+  const today=new Date(); const start=new Date(today); start.setDate(today.getDate()-today.getDay()); const end=new Date(start); end.setDate(start.getDate()+6);
+  const inWeek = d => { const x=new Date(d); return x>=start && x<=end }
+  // Compose list
+  const weekEvents = state.events.filter(e=> inWeek(e.date));
+  const weekAssess = state.assessments.filter(a=> inWeek(a.date) || (a.makeup && inWeek(a.makeup.date)));
+  const weekMin = state.min_achievement.filter(m=> inWeek(m.date));
+  const weekTasks = state.tasks.filter(t=> inWeek(t.due));
+  byId("dashWeek").innerHTML = [
+    ...weekEvents.map(e=>`<div class="file-card"><div><strong>행사</strong> ${e.title} <span class="small">(${fmtDate(e.date)})</span></div><div class="small">${Object.keys(e.classMemos||{}).length? '반별 메모 있음':''}</div></div>`),
+    ...weekAssess.map(a=>`<div class="file-card"><div><strong>평가</strong> ${a.title} ${a.type} <span class="small">(${fmtDate(a.date)})</span></div><div class="small">${a.makeup? '보충 '+fmtDate(a.makeup.date)+' '+(a.makeup.time||''):''}</div></div>`),
+    ...weekMin.map(m=>`<div class="file-card"><div><strong>${m.mode==='prevention'?'예방':'보충'}</strong> ${m.title} <span class="small">(${fmtDate(m.date)} ${m.time||''})</span></div><div class="small">${m.class} ${m.subject||''}</div></div>`),
+    ...weekTasks.map(t=>`<div class="file-card"><div><strong>업무</strong> ${t.title}</div><div class="small">마감 ${fmtDate(t.due)}</div></div>`)
+  ].join("") || '<div class="small">이번 주 일정이 없습니다.</div>';
+
+  const dueSoon = state.tasks.filter(t=> t.status!=="done" && Math.ceil((new Date(t.due)-new Date())/86400000)<=3).sort((a,b)=> new Date(a.due)-new Date(b.due));
+  byId("dashDue").innerHTML = dueSoon.length ? dueSoon.map(t=>`<div class="task"><div style="display:flex; justify-content:space-between;"><strong>${t.title}</strong><span class="small">${fmtDate(t.due)} · ${dday(t.due)}</span></div><div class="progress"><span style="width:${t.progress}%"></span></div><div class="small">진행률 ${t.progress}% · ${t.role}</div></div>`).join("") : '<div class="small">임박 업무가 없습니다.</div>';
+
+  drawBar(byId("chTask").getContext("2d"), ["할 일","진행","완료"], [
+    state.tasks.filter(x=>x.status==="todo").length,
+    state.tasks.filter(x=>x.status==="doing").length,
+    state.tasks.filter(x=>x.status==="done").length
+  ]);
+
+  // gap: compute current week subject/class variance by period count
+  const week = getWeekNumber(today);
+  const classes = [...new Set(state.progress.filter(p=> p.week==week).map(p=> p.class))];
+  const counts = classes.map(c=> state.progress.filter(p=> p.week==week && p.class===c).reduce((s,p)=> s+(Number(p.period)||0),0));
+  drawBar(byId("chGap").getContext("2d"), classes.length?classes:["데이터 없음"], counts.length?counts:[0]);
+}
+
+/* ---------------- Calendar with filters ---------------- */
+let curMonth=new Date(); curMonth.setDate(1);
+byId("prevM").onclick=()=>{ curMonth.setMonth(curMonth.getMonth()-1); renderCalendar() }
+byId("nextM").onclick=()=>{ curMonth.setMonth(curMonth.getMonth()+1); renderCalendar() }
+byId("calFilter").onchange=renderCalendar;
+
+function renderCalendar(){
+  byId("monthLabel").textContent = `${curMonth.getFullYear()}년 ${curMonth.getMonth()+1}월`;
+  const grid=byId("calGrid"); grid.innerHTML="";
+  const names=["일","월","화","수","목","금","토"]; for(const n of names){ const d=document.createElement("div"); d.className="day-name"; d.textContent=n; grid.appendChild(d) }
+  const firstDay=new Date(curMonth); const startIdx=firstDay.getDay(); const daysInMonth=new Date(curMonth.getFullYear(), curMonth.getMonth()+1,0).getDate();
+  for(let i=0;i<startIdx;i++){ const c=document.createElement("div"); c.className="cell"; grid.appendChild(c) }
+  const filter=byId("calFilter").value;
+  for(let date=1; date<=daysInMonth; date++){
+    const iso=`${curMonth.getFullYear()}-${String(curMonth.getMonth()+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+    const cell=document.createElement("div"); cell.className="cell";
+    const head=document.createElement("div"); head.className="small"; head.textContent=`${date}`; cell.appendChild(head);
+    // events
+    const ev = state.events.filter(e=> e.date===iso && (filter==="ALL" || filter==="행사"));
+    ev.forEach(e=>{
+      const el=document.createElement("div"); el.className="event"; el.innerHTML=`<strong>행사</strong> ${e.title}`; el.title=e.memo||"";
+      el.onclick=()=> openEventMemo(e);
+      cell.appendChild(el);
+    });
+    // assessments
+    const as = state.assessments.filter(a=> (a.date===iso || (a.makeup && a.makeup.date===iso)) && (filter==="ALL" || filter==="평가" || filter==="보충"));
+    as.forEach(a=>{
+      const el=document.createElement("div"); el.className="event"; el.innerHTML=`<strong>${a.date===iso?'평가':'보충'}</strong> ${a.title}`; cell.appendChild(el);
+    });
+    // tasks
+    const ts = state.tasks.filter(t=> t.due===iso && (filter==="ALL" || filter==="업무"));
+    ts.forEach(t=>{ const el=document.createElement("div"); el.className="event"; el.innerHTML=`<strong>업무</strong> ${t.title}`; cell.appendChild(el) });
+    // progress sessions (class lessons)
+    const pr = state.progress.filter(p=> p.date===iso && (filter==="ALL" || filter==="수업"));
+    pr.forEach(p=>{ const el=document.createElement("div"); el.className="event"; el.innerHTML=`<strong>수업</strong> ${p.subject||''} ${p.class||''} ${p.period||''}차시`; cell.appendChild(el) });
+    grid.appendChild(cell);
+  }
+}
+function openEventMemo(e){
+  const lines = Object.entries(e.classMemos||{}).map(([cls,m])=> `<div><strong>${cls}</strong> <span class="small">${m}</span></div>`).join("") || '<div class="small">반별 메모 없음</div>';
+  alert(`행사: ${e.title}\n날짜: ${fmtDate(e.date)}\n공통 메모: ${e.memo||''}\n\n반별 메모:\n${Object.entries(e.classMemos||{}).map(([k,v])=>`${k}: ${v}`).join("\n")||'-'}`);
+}
+
+/* ---------------- Events create ---------------- */
+let classMemoTemp={};
+byId("addClassMemo").onclick=()=>{
+  const cls=byId("evClass").value.trim(), memo=byId("evClassMemo").value.trim();
+  if(!cls || !memo) return;
+  classMemoTemp[cls]=memo;
+  byId("evClassMemoList").innerHTML = Object.entries(classMemoTemp).map(([k,v])=>`<div class="small">${k}: ${v}</div>`).join("");
+  byId("evClass").value=""; byId("evClassMemo").value="";
+}
+byId("addEvent").onclick=()=>{
+  const title=byId("evTitle").value.trim(), date=byId("evDate").value;
+  if(!title||!date){ toast("입력 오류","행사명/날짜 필수"); return }
+  const memo=byId("evMemo").value.trim();
+  state.events.push({ id:rid(), title, date, memo, classMemos: {...classMemoTemp}, createdAt: now() });
+  classMemoTemp={}; byId("evClassMemoList").innerHTML="";
+  save(); renderCalendar(); drawDash(); toast("행사 등록", `${title} · ${fmtDate(date)}`);
+  ["evTitle","evDate","evMemo"].forEach(id=> byId(id).value="");
+}
+byId("clearEvent").onclick=()=>{ ["evTitle","evDate","evMemo"].forEach(id=> byId(id).value=""); classMemoTemp={}; byId("evClassMemoList").innerHTML=""; }
+
+/* ---------------- Tasks (Kanban + alerts) ---------------- */
+function renderKanban(){
+  const cols={ todo:byId("col-todo"), doing:byId("col-doing"), done:byId("col-done") };
+  Object.values(cols).forEach(c=> c.innerHTML="");
+  const tasks=state.tasks.slice().sort((a,b)=> new Date(a.due)-new Date(b.due));
+  let cTodo=0,cDoing=0,cDone=0;
+  for(const t of tasks){
+    const card=document.createElement("div"); card.className="task"; card.draggable=true;
+    card.innerHTML=`<div style="display:flex; justify-content:space-between; gap:8px;"><div><strong>${t.title}</strong></div><div class="small">${fmtDate(t.due)} · ${dday(t.due)}</div></div><div class="small">${t.memo||""}</div><div class="progress"><span style="width:${t.progress}%"></span></div><div class="small">진행률 ${t.progress}% · ${t.role}</div><div style="display:flex; gap:6px; margin-top:6px;"><button class="btn" data-act="edit">편집</button><button class="btn" data-act="del">삭제</button></div>`;
+    card.querySelector('[data-act="del"]').onclick=()=>{ if(confirm("삭제할까요?")){ state.tasks = state.tasks.filter(x=>x.id!==t.id); save(); renderKanban(); drawDash() } };
+    card.querySelector('[data-act="edit"]').onclick=()=>{ const np=prompt("새 진행률(0-100)", t.progress); if(np===null) return; const v=Math.max(0,Math.min(100,Number(np)||0)); t.progress=v; t.status = v>=100 ? "done" : v>0 ? "doing" : "todo"; save(); renderKanban(); drawDash(); };
+    card.addEventListener("dragstart", e=> e.dataTransfer.setData("text/plain", t.id));
+    cols[t.status].appendChild(card);
+    if(t.status==="todo") cTodo++; else if(t.status==="doing") cDoing++; else cDone++;
+  }
+  byId("cntTodo").textContent=`${cTodo}건`; byId("cntDoing").textContent=`${cDoing}건`; byId("cntDone").textContent=`${cDone}건`;
+  document.querySelectorAll(".column").forEach(col=>{ col.ondragover=e=>e.preventDefault(); col.ondrop=e=>{ e.preventDefault(); const id=e.dataTransfer.getData("text/plain"); const t=state.tasks.find(x=>x.id===id); t.status=col.dataset.col; if(t.status==="done") t.progress=100; else if(t.status==="doing"&&t.progress===0) t.progress=10; save(); renderKanban(); drawDash(); }; });
+}
+byId("addTask").onclick=()=>{
+  const title=byId("taskTitle").value.trim(), role=byId("taskRole").value, due=byId("taskDue").value, progress=Number(byId("taskProg").value)||0, memo=byId("taskMemo").value.trim();
+  if(!title||!due){ toast("입력 오류","업무명/마감일"); return }
+  const status=progress>=100?"done":progress>0?"doing":"todo";
+  state.tasks.push({ id:rid(), title, role, due, progress, memo, status, createdAt: now() });
+  save(); renderKanban(); drawDash(); ["taskTitle","taskDue","taskMemo"].forEach(id=> byId(id).value=""); byId("taskProg").value=0; byId("progVal").innerText="0%";
+}
+byId("clearTask").onclick=()=>{ ["taskTitle","taskDue","taskMemo"].forEach(id=> byId(id).value=""); byId("taskProg").value=0; byId("progVal").innerText="0%" }
+byId("notifySoon").onclick=()=>{ const soon=state.tasks.filter(t=> Math.ceil((new Date(t.due)-new Date())/86400000)<=3 && t.status!=="done"); if(!soon.length) toast("알림","3일 내 마감 없음"); else soon.forEach(t=> toast("임박 업무", `${t.title} · ${fmtDate(t.due)} (${dday(t.due)})`)) }
+
+/* ---------------- Files with quick preview ---------------- */
+let fileView="list"; let selectedFileId=null;
+function typeOfFile(name){
+  const ext=(name.split(".").pop()||"").toLowerCase();
+  if(["jpg","jpeg","png","gif","svg","webp"].includes(ext)) return "이미지";
+  if(["pdf","txt","md","csv"].includes(ext)) return "문서";
+  if(["mp4","webm","mov","m4v"].includes(ext)) return "영상";
+  if(["mp3","wav","ogg","m4a"].includes(ext)) return "오디오";
+  return "기타";
+}
+byId("toggleView").onclick=()=>{ fileView = fileView==="list"?"grid":"list"; renderFiles() }
+byId("uploadFile").onclick=()=>{
+  const input=byId("fileInput"); if(!input.files?.length){ toast("업로드 실패","파일 선택"); return }
+  Array.from(input.files).forEach(f=>{
+    const id=rid(); const reader=new FileReader();
+    reader.onload=()=>{
+      state.files.push({ id, name:f.name, size:f.size, type:typeOfFile(f.name), data:reader.result, createdAt: now(), lastOpen: null, pin:false, comments:[], link:null });
+      save(); renderFiles(); input.value=""; toast("업로드", `${f.name} (${f.size}B)`);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+byId("downloadFile").onclick=()=>{
+  const f=state.files.find(x=>x.id===selectedFileId); if(!f){ toast("선택 없음"); return }
+  const a=document.createElement("a"); a.href=f.data; a.download=f.name; a.click();
+}
+byId("pinFile").onclick=()=>{ const f=state.files.find(x=>x.id===selectedFileId); if(!f) return; f.pin=!f.pin; save(); renderFiles() }
+byId("delFile").onclick=()=>{ if(!selectedFileId) return; if(confirm("삭제할까요?")){ state.files = state.files.filter(x=>x.id!==selectedFileId); save(); renderFiles(); byId("filePreview").innerHTML="파일을 선택하세요."; selectedFileId=null } }
+
+byId("fileSearch").oninput=renderFiles; byId("fileType").onchange=renderFiles; byId("fileSort").onchange=renderFiles;
+function renderFiles(){
+  const wrap=byId("fileList"); const q=byId("fileSearch").value.trim().toLowerCase(); const ft=byId("fileType").value;
+  const sort=byId("fileSort").value;
+  let files=state.files.slice();
+  // filter
+  files=files.filter(f=> (ft==="ALL"||f.type===ft) && (f.name.toLowerCase().includes(q) || (f.comments||[]).some(c=> c.toLowerCase().includes(q))));
+  // sort
+  files.sort((a,b)=>{
+    if(a.pin!==b.pin) return a.pin?-1:1;
+    if(sort==="recent") return new Date(b.createdAt)-new Date(a.createdAt);
+    if(sort==="name") return a.name.localeCompare(b.name, "ko");
+    if(sort==="type") return a.type.localeCompare(b.type, "ko");
+    if(sort==="size") return (b.size||0)-(a.size||0);
+    if(sort==="opened") return (new Date(b.lastOpen||0)) - (new Date(a.lastOpen||0));
+    if(sort==="comments") return (b.comments?.length||0) - (a.comments?.length||0);
+    return 0;
+  });
+  // view
+  wrap.innerHTML="";
+  if(!files.length){ wrap.innerHTML='<div class="small">파일이 없습니다.</div>'; return }
+  const list=document.createElement("div");
+  list.style.display="grid"; list.style.gap="8px";
+  list.style.gridTemplateColumns = fileView==="grid" ? "repeat(auto-fill, minmax(220px,1fr))" : "1fr";
+  files.forEach(f=>{
+    const row=document.createElement("div"); row.className="file-card"; row.tabIndex=0;
+    row.innerHTML=`<div style="flex:1 1 auto;">
+      <div><strong>${f.name}</strong> ${f.pin?'<span class="pin">★</span>':''}</div>
+      <div class="file-meta">${f.type} · ${(f.size||0)}B · 업로드 ${fmtDate(f.createdAt)}</div>
+      <div id="cmt-${f.id}">${(f.comments||[]).slice(-2).map(c=>`<div class="small">• ${c}</div>`).join("")}</div>
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <input class="input" id="inp-${f.id}" placeholder="댓글 추가..." />
+        <button class="btn" data-add="${f.id}">추가</button>
+      </div>
+    </div>
+    <div><button class="btn" data-open="${f.id}">열기</button></div>`;
+    row.querySelector(`[data-add="${f.id}"]`).onclick=()=>{ const val=byId(`inp-${f.id}`).value.trim(); if(!val) return; f.comments=f.comments||[]; f.comments.push(val); save(); byId(`cmt-${f.id}`).insertAdjacentHTML("beforeend", `<div class="small">• ${val}</div>`); byId(`inp-${f.id}`).value=""; };
+    row.querySelector(`[data-open="${f.id}"]`).onclick=()=> openFile(f.id);
+    row.addEventListener("keydown", e=>{ if(e.key==="Enter") openFile(f.id) });
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+}
+function openFile(id){
+  selectedFileId=id; const f=state.files.find(x=>x.id===id); if(!f) return;
+  f.lastOpen=now(); save();
+  const prev=byId("filePreview");
+  if(f.type==="이미지"){ prev.innerHTML=`<img src="${f.data}" alt="${f.name}" style="max-width:100%; height:auto; border-radius:12px;" />`; }
+  else if(f.type==="문서"){
+    if(f.name.toLowerCase().endsWith(".pdf")) prev.innerHTML=`<embed src="${f.data}" type="application/pdf" style="width:100%; height:300px; border:0; border-radius:8px;">`;
+    else {
+      fetch(f.data).then(r=>r.text()).then(t=>{
+        const lines = t.split(/\r?\n/).slice(0,20).join("\n").replace(/[&<>]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[s]));
+        prev.innerHTML=`<pre style="white-space:pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">${lines}</pre>`;
+      }).catch(()=> prev.textContent="미리보기를 불러올 수 없습니다.");
+    }
+  }
+  else if(f.type==="영상"){ prev.innerHTML=`<video controls src="${f.data}" style="max-width:100%; border-radius:8px;"></video>`; }
+  else if(f.type==="오디오"){ prev.innerHTML=`<audio controls src="${f.data}" style="width:100%"></audio>`; }
+  else { prev.innerHTML=`<div class="small">미리보기를 지원하지 않는 유형입니다. 다운로드로 열어주세요.</div>`; }
+}
+
+/* ---------------- Progress (week/date/period) ---------------- */
+function yearOptions(sel){ sel.innerHTML=""; const y=new Date().getFullYear(); for(let i=-1;i<=1;i++){ const opt=document.createElement("option"); opt.value=y+i; opt.textContent=y+i; sel.appendChild(opt) } sel.value=y }
+yearOptions(byId("pYear")); yearOptions(byId("plYear"));
+function getWeekNumber(d){ d=new Date(d); d.setHours(0,0,0,0); const jan1=new Date(d.getFullYear(),0,1); const days=Math.floor((d-jan1)/86400000)+jan1.getDay()+1; return Math.ceil(days/7) }
+byId("pFilter").onclick=renderProgress;
+byId("pAdd").onclick=()=> addProgressRow({year:Number(byId("pYear").value), term:Number(byId("pTerm").value), subject:byId("pSubject").value.trim(), class:byId("pClass").value.trim(), week:getWeekNumber(new Date()), date:new Date().toISOString().slice(0,10), period:1, unit:"", goal:"", activities:"", homework:"", note:""});
+byId("pCopy").onclick=()=>{
+  const src = state.progress.filter(p=> p.year==byId("pYear").value && p.term==byId("pTerm").value && p.subject==byId("pSubject").value.trim() && p.class==byId("pClass").value.trim());
+  const to = prompt("복사 대상 반(쉼표로 여러 개)");
+  if(!to) return;
+  to.split(",").map(s=>s.trim()).filter(Boolean).forEach(cls=>{
+    src.forEach(p=> state.progress.push({...p, id:rid(), class:cls}));
+  });
+  save(); toast("복사 완료","선택 반으로 복사되었습니다.");
+}
+byId("pExport").onclick=()=>{
+  const rows=[["year","term","subject","class","week","date","period","unit","goal","activities","homework","note"]].concat(state.progress.map(p=>[p.year,p.term,p.subject,p.class,p.week,p.date,p.period,p.unit,p.goal,p.activities,p.homework,p.note]));
+  downloadCSV("progress.csv", rows);
+}
+byId("pImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
+  rows.slice(1).forEach(r=>{
+    if(!r.length) return;
+    const [year,term,subject,cls,week,date,period,unit,goal,activities,homework,note]=r;
+    state.progress.push({ id:rid(), year:Number(year), term:Number(term), subject, class:cls, week:Number(week), date, period:Number(period), unit, goal, activities, homework, note });
+  });
+  save(); renderProgress(); toast("가져오기 완료","진도표가 반영되었습니다.");
+});
+
+function renderProgress(){
+  const tbody=byId("pTable").querySelector("tbody"); tbody.innerHTML="";
+  const y=Number(byId("pYear").value), t=Number(byId("pTerm").value), s=byId("pSubject").value.trim(), c=byId("pClass").value.trim();
+  const rows = state.progress.filter(p=> (!y||p.year==y)&&(!t||p.term==t)&&(!s||p.subject==s)&&(!c||p.class==c)).sort((a,b)=> new Date(a.date)-new Date(b.date) || (a.period-b.period));
+  rows.forEach(p=> addProgressRow(p, true));
+}
+function addProgressRow(p, append=false){
+  if(!p.id){ p.id=rid(); state.progress.push(p); save() }
+  const tr=document.createElement("tr"); tr.innerHTML=`
+    <td><input class="input" value="${p.week||''}" style="max-width:70px"></td>
+    <td><input class="input" type="date" value="${p.date||''}" style="max-width:150px"></td>
+    <td><input class="input" value="${p.period||''}" style="max-width:70px"></td>
+    <td><input class="input" value="${p.unit||''}"></td>
+    <td><input class="input" value="${p.goal||''}"></td>
+    <td><input class="input" value="${p.activities||''}"></td>
+    <td><input class="input" value="${p.homework||''}"></td>
+    <td><input class="input" value="${p.note||''}"></td>
+    <td><button class="btn">삭제</button></td>`;
+  const [w,d,pr,unit,goal,act,hw,note,del]=tr.querySelectorAll("td > *");
+  const sync=()=>{ p.week=Number(w.value)||0; p.date=d.value; p.period=Number(pr.value)||0; p.unit=unit.value; p.goal=goal.value; p.activities=act.value; p.homework=hw.value; p.note=note.value; save(); drawWeeklyGap(); renderCalendar(); drawDash(); };
+  [w,d,pr,unit,goal,act,hw,note].forEach(el=> el.addEventListener("change", sync));
+  del.onclick=()=>{ if(confirm("삭제할까요?")){ state.progress = state.progress.filter(x=>x.id!==p.id); save(); renderProgress(); drawWeeklyGap(); renderCalendar(); drawDash(); } };
+  byId("pTable").querySelector("tbody").appendChild(tr);
+}
+
+/* weekly gap chart */
+function drawWeeklyGap(){
+  const ctx=byId("chWeeklyGap").getContext("2d");
+  const week = getWeekNumber(new Date());
+  const classes=[...new Set(state.progress.filter(p=> p.week==week).map(p=> p.class))];
+  const counts=classes.map(c=> state.progress.filter(p=> p.week==week && p.class===c).reduce((s,p)=> s+(Number(p.period)||0),0));
+  drawBar(ctx, classes.length?classes:["데이터 없음"], counts.length?counts:[0]);
+}
+
+/* ---------------- Plans ---------------- */
+byId("plAdd").onclick=()=> addPlanRow({year:Number(byId("plYear").value), term:Number(byId("plTerm").value), subject:byId("plSubject").value.trim(), class:byId("plClass").value.trim(), period:1, week:getWeekNumber(new Date()), date:new Date().toISOString().slice(0,10), goal:"", keyConcept:"", materials:"", assessment:""});
+byId("plAuto").onclick=()=>{
+  const startW=Number(prompt("시작 주차", getWeekNumber(new Date()))||0);
+  const count=Number(prompt("생성할 차시 수", 4)||0);
+  for(let i=0;i<count;i++){
+    addPlanRow({year:Number(byId("plYear").value), term:Number(byId("plTerm").value), subject:byId("plSubject").value.trim(), class:byId("plClass").value.trim(), period:i+1, week:startW, date:"", goal:"", keyConcept:"", materials:"", assessment:""});
+  }
+  toast("자동 배분","차시 뼈대가 생성되었습니다.");
+}
+byId("plCopy").onclick=()=>{
+  const src = state.plans.filter(p=> p.year==byId("plYear").value && p.term==byId("plTerm").value && p.subject==byId("plSubject").value.trim() && p.class==byId("plClass").value.trim());
+  const to = prompt("복사 대상 반(쉼표로 여러 개)");
+  if(!to) return;
+  to.split(",").map(s=>s.trim()).filter(Boolean).forEach(cls=>{
+    src.forEach(p=> state.plans.push({...p, id:rid(), class:cls}));
+  });
+  save(); toast("복사 완료","계획이 복사되었습니다.");
+}
+byId("plExport").onclick=()=>{
+  const rows=[["year","term","subject","class","period","week","date","goal","keyConcept","materials","assessment"]].concat(state.plans.map(p=>[p.year,p.term,p.subject,p.class,p.period,p.week,p.date,p.goal,p.keyConcept,p.materials,p.assessment]));
+  downloadCSV("plans.csv", rows);
+}
+byId("plImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
+  rows.slice(1).forEach(r=>{
+    if(!r.length) return;
+    const [year,term,subject,cls,period,week,date,goal,keyConcept,materials,assessment]=r;
+    state.plans.push({ id:rid(), year:Number(year), term:Number(term), subject, class:cls, period:Number(period), week:Number(week), date, goal, keyConcept, materials, assessment });
+  });
+  save(); renderPlans(); toast("가져오기 완료","계획이 반영되었습니다.");
+});
+function renderPlans(){
+  const tbody=byId("plTable").querySelector("tbody"); tbody.innerHTML="";
+  const y=Number(byId("plYear").value), t=Number(byId("plTerm").value), s=byId("plSubject").value.trim(), c=byId("plClass").value.trim();
+  const rows = state.plans.filter(p=> (!y||p.year==y)&&(!t||p.term==t)&&(!s||p.subject==s)&&(!c||p.class==c)).sort((a,b)=> (a.period-b.period) || new Date(a.date)-new Date(b.date));
+  rows.forEach(p=> addPlanRow(p, true));
+}
+function addPlanRow(p, append=false){
+  if(!p.id){ p.id=rid(); state.plans.push(p); save() }
+  const tr=document.createElement("tr"); tr.innerHTML=`
+    <td><input class="input" value="${p.period||''}" style="max-width:70px"></td>
+    <td><input class="input" value="${p.week||''}" style="max-width:70px"></td>
+    <td><input class="input" type="date" value="${p.date||''}" style="max-width:150px"></td>
+    <td><input class="input" value="${p.goal||''}"></td>
+    <td><input class="input" value="${p.keyConcept||''}"></td>
+    <td><input class="input" value="${p.materials||''}"></td>
+    <td><input class="input" value="${p.assessment||''}"></td>
+    <td><button class="btn">삭제</button></td>`;
+  const [period,week,date,goal,key,mat,ass,del]=tr.querySelectorAll("td > *");
+  const sync=()=>{ p.period=Number(period.value)||0; p.week=Number(week.value)||0; p.date=date.value; p.goal=goal.value; p.keyConcept=key.value; p.materials=mat.value; p.assessment=ass.value; save(); };
+  [period,week,date,goal,key,mat,ass].forEach(el=> el.addEventListener("change", sync));
+  del.onclick=()=>{ if(confirm("삭제할까요?")){ state.plans = state.plans.filter(x=>x.id!==p.id); save(); renderPlans(); } };
+  byId("plTable").querySelector("tbody").appendChild(tr);
+}
+
+/* ---------------- Assessments (with absentees & makeup) ---------------- */
+byId("asAdd").onclick=()=> addAssessRow({title:"단원평가", type:"단원", scope:"", date:new Date().toISOString().slice(0,10), class:byId("asClass").value.trim(), subject:byId("asSubject").value.trim(), absentees:"", makeup:{date:"", time:"", place:""}, note:""});
+byId("asExport").onclick=()=>{
+  const rows=[["subject","class","type","title","scope","date","absentees","makeup_date","makeup_time","makeup_place","note"]].concat(state.assessments.map(a=>[a.subject||"",a.class||"",a.type||"",a.title||"",a.scope||"",a.date||"",a.absentees||"",a.makeup?.date||"",a.makeup?.time||"",a.makeup?.place||"",a.note||""]));
+  downloadCSV("assessments.csv", rows);
+}
+byId("asImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
+  rows.slice(1).forEach(r=>{
+    if(!r.length) return;
+    const [subject,cls,type,title,scope,date,abs,md,mt,mp,note]=r;
+    state.assessments.push({ id:rid(), subject, class:cls, type, title, scope, date, absentees:abs, makeup:{date:md,time:mt,place:mp}, note });
+  });
+  save(); renderAssess(); toast("가져오기 완료","평가가 반영되었습니다.");
+});
+function renderAssess(){
+  const tbody=byId("asTable").querySelector("tbody"); tbody.innerHTML="";
+  const s=byId("asSubject").value.trim(), c=byId("asClass").value.trim();
+  const rows = state.assessments.filter(a=> (!s||a.subject==s)&&(!c||a.class==c)).sort((a,b)=> new Date(a.date)-new Date(b.date));
+  rows.forEach(a=> addAssessRow(a, true));
+}
+function addAssessRow(a, append=false){
+  if(!a.id){ a.id=rid(); state.assessments.push(a); save() }
+  const tr=document.createElement("tr"); tr.innerHTML=`
+    <td><input class="input" value="${a.title||''}"></td>
+    <td><select class="input"><option ${a.type==='단원'?'selected':''}>단원</option><option ${a.type==='수행'?'selected':''}>수행</option></select></td>
+    <td><input class="input" value="${a.scope||''}"></td>
+    <td><input class="input" type="date" value="${a.date||''}"></td>
+    <td><input class="input" value="${a.class||''}"></td>
+    <td><input class="input" value="${a.subject||''}"></td>
+    <td><input class="input" value="${a.absentees||''}" placeholder="홍길동;김00 또는 2명"></td>
+    <td><div style="display:flex; gap:6px;"><input class="input" type="date" value="${a.makeup?.date||''}" style="max-width:140px"><input class="input" value="${a.makeup?.time||''}" placeholder="15:30" style="max-width:90px"><input class="input" value="${a.makeup?.place||''}" placeholder="장소" style="max-width:120px"></div></td>
+    <td><input class="input" value="${a.note||''}"></td>
+    <td><button class="btn">삭제</button></td>`;
+  const [title,type,scope,date,cls,sub,abs,wrapMake, note, del]=tr.querySelectorAll("td > *");
+  const [mdate, mtime, mplace]=wrapMake.querySelectorAll("input");
+  const sync=()=>{ a.title=title.value; a.type=type.value; a.scope=scope.value; a.date=date.value; a.class=cls.value; a.subject=sub.value; a.absentees=abs.value; a.makeup={date:mdate.value, time:mtime.value, place:mplace.value}; a.note=note.value; save(); renderCalendar(); drawDash(); };
+  [title,type,scope,date,cls,sub,abs,mdate,mtime,mplace,note].forEach(el=> el.addEventListener("change", sync));
+  del.onclick=()=>{ if(confirm("삭제할까요?")){ state.assessments = state.assessments.filter(x=>x.id!==a.id); save(); renderAssess(); renderCalendar(); drawDash(); } };
+  byId("asTable").querySelector("tbody").appendChild(tr);
+}
+
+/* ---------------- Minimum Achievement ---------------- */
+byId("maAdd").onclick=()=> addMArow({mode:"prevention", title:"보강 학습", date:new Date().toISOString().slice(0,10), time:"", class:byId("maClass").value.trim(), subject:byId("maSubject").value.trim(), content:"", participants:"", followup:"", result:{attended:"",retested:"",improved:""}});
+byId("maExport").onclick=()=>{
+  const rows=[["subject","class","mode","title","date","time","content","participants","followup","attended","retested","improved"]]
+    .concat(state.min_achievement.map(m=>[m.subject||"",m.class||"",m.mode||"",m.title||"",m.date||"",m.time||"",m.content||"",m.participants||"",m.followup||"",m.result?.attended||"",m.result?.retested||"",m.result?.improved||""]));
+  downloadCSV("min_achievement.csv", rows);
+}
+byId("maImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
+  rows.slice(1).forEach(r=>{
+    if(!r.length) return;
+    const [subject,cls,mode,title,date,time,content,participants,followup,attended,retested,improved]=r;
+    state.min_achievement.push({ id:rid(), subject, class:cls, mode, title, date, time, content, participants, followup, result:{attended, retested, improved} });
+  });
+  save(); renderMinAchv(); toast("가져오기 완료","보장지도 데이터 반영");
+});
+// ── (A) 보장지도 표가 없으면 자동으로 만들어 붙이는 자가치유 함수 ──
+function ensureMaTable(){
+  if (document.getElementById("maTable")) return; // 이미 있으면 패스
+
+  // "보장지도" 섹션 추정 호스트 찾기 (가능한 후보들 순회)
+  const host =
+    document.getElementById("minAchvSection") ||
+    document.getElementById("minAchv") ||
+    document.getElementById("maSection") ||
+    document.getElementById("section-min") ||
+    (document.querySelector('[data-target="min"]') && document.querySelector('[data-target="min"]').closest('section')) ||
+    document.querySelector('section#min') ||
+    document.body; // 최후의 보루: 바디 끝
+
+  // 래퍼 + 테이블 삽입
+  const wrap = document.createElement("div");
+  wrap.id = "maTable-wrapper";
+  wrap.innerHTML = `
+    <table id="maTable" class="table" style="margin-top:10px; width:100%">
+      <thead>
+        <tr>
+          <th>모드</th>
+          <th>제목</th>
+          <th>날짜</th>
+          <th>반</th>
+          <th>과목</th>
+          <th>내용</th>
+          <th>대상</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  `;
+  // 컨트롤(과목/반 선택, 세션추가 버튼) 블록이 있으면 그 바로 뒤에, 없으면 섹션 맨 끝에
+  const anchor = document.getElementById("maControls") || host;
+  anchor.appendChild(wrap);
+}
+// ── (B) 렌더 함수: 표 보장 → 필터/정렬 → 행 추가 ──
+function renderMinAchv(){
+  // 표 보장(없으면 생성)
+  ensureMaTable?.();
+
+  const table = document.getElementById("maTable");
+  if (!table) return;
+
+  // ① 헤더를 항상 8열 구조로 **강제 재구성**
+  const thead = table.tHead || table.createTHead();
+  thead.innerHTML = `
+    <tr>
+      <th>모드</th>
+      <th>제목</th>
+      <th>날짜</th>
+      <th>반</th>
+      <th>과목</th>
+      <th>내용</th>
+      <th>대상</th>
+      <th></th>
+    </tr>
+  `;
+
+  // ② 바디 비우고 다시 그림
+  const tbody = table.tBodies[0] || table.createTBody();
+  tbody.innerHTML = "";
+
+  const s = byId("maSubject") ? byId("maSubject").value.trim() : "";
+  const c = byId("maClass")   ? byId("maClass").value.trim()   : "";
+
+  (state.min_achievement || [])
+    .filter(m => (!s || m.subject === s) && (!c || m.class === c))
+    .sort((a,b)=> new Date(a.date||"2100-01-01") - new Date(b.date||"2100-01-01"))
+    .forEach(m => addMArow(m, true));
+}
+
+// ── (C) 행 추가 함수: (시간/후속/참여/재평가/개선 제거 + '대상' 확장 구조) ──
+function addMArow(m, append = false){
+  ensureMaTable();
+
+  if (!m.id) { m.id = rid(); (state.min_achievement ||= []).push(m); save(); }
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <select data-field="mode">
+        <option value="prevention">예방</option>
+        <option value="remediation">보충</option>
+      </select>
+    </td>
+    <td><input class="input" data-field="title"   value="${m.title||''}"></td>
+    <td><input class="input" data-field="date"    type="date" value="${m.date||''}"></td>
+    <td><input class="input" data-field="class"   value="${m.class||''}"></td>
+    <td><input class="input" data-field="subject" value="${m.subject||''}"></td>
+    <td><input class="input" data-field="content" value="${m.content||''}"></td>
+    <td><input class="input" data-field="participants" value="${m.participants||''}" placeholder="전원/일부/N명"></td>
+    <td><button class="btn" data-field="del">삭제</button></td>
+  `;
+
+  // 테이블에 먼저 붙임
+  const tbody = document.querySelector("#maTable tbody");
+  if (tbody) tbody.appendChild(tr);
+
+  // 요소 참조
+  const modeSel = tr.querySelector('select[data-field="mode"]');
+  const title   = tr.querySelector('input[data-field="title"]');
+  const date    = tr.querySelector('input[data-field="date"]');
+  const cls     = tr.querySelector('input[data-field="class"]');
+  const sub     = tr.querySelector('input[data-field="subject"]');
+  const content = tr.querySelector('input[data-field="content"]');
+  const part    = tr.querySelector('input[data-field="participants"]');
+  const delBtn  = tr.querySelector('[data-field="del"]');
+
+  // 초기값 정규화 + 표시
+  if (m.mode === "예방") m.mode = "prevention";
+  if (m.mode === "보충") m.mode = "remediation";
+  if (!m.mode) m.mode = "prevention";
+  if (modeSel) { modeSel.value = m.mode; }
+
+  // 동기화 (change만)
+  const sync = () => {
+    if (modeSel) m.mode         = modeSel.value;
+    if (title)   m.title        = title.value;
+    if (date)    m.date         = date.value;
+    if (cls)     m.class        = cls.value;
+    if (sub)     m.subject      = sub.value;
+    if (content) m.content      = content.value;
+    if (part)    m.participants = part.value;
+
+    // 과거 데이터 호환(삭제한 필드 제거)
+    delete m.time; delete m.followup; delete m.result;
+
+    save(); renderCalendar(); drawDash();
+  };
+  [modeSel, title, date, cls, sub, content, part].forEach(el => { if (el) el.addEventListener("change", sync); });
+
+  // 삭제
+  if (delBtn) delBtn.onclick = () => {
+    if (confirm("삭제할까요?")) {
+      state.min_achievement = (state.min_achievement||[]).filter(x => x.id !== m.id);
+      save(); renderMinAchv(); renderCalendar(); drawDash();
+    }
+  };
+}
+
+/* ---------------- Simple charts ---------------- */
+function drawBar(ctx, labels, data){
+  const w=ctx.canvas.width=ctx.canvas.clientWidth*devicePixelRatio;
+  const h=ctx.canvas.height=ctx.canvas.clientHeight*devicePixelRatio;
+  ctx.clearRect(0,0,w,h);
+  const padding=40*devicePixelRatio;
+  const maxVal=Math.max(1,...data);
+  const bw=(w-padding*2)/data.length*0.6;
+  const gap=(w-padding*2)/data.length*0.4;
+  const style=getComputedStyle(document.body);
+  ctx.strokeStyle=style.getPropertyValue('--border'); ctx.fillStyle=style.getPropertyValue('--text'); ctx.lineWidth=1*devicePixelRatio;
+  ctx.beginPath(); ctx.moveTo(padding,h-padding); ctx.lineTo(w-padding,h-padding); ctx.moveTo(padding,h-padding); ctx.lineTo(padding,padding); ctx.stroke();
+  const accent=style.getPropertyValue('--accent').trim();
+  for(let i=0;i<data.length;i++){
+    const x=padding+i*(bw+gap);
+    const y=(h-padding)-(data[i]/maxVal)*(h-padding*2);
+    ctx.fillStyle=accent; ctx.fillRect(x,y,bw,(h-padding)-y);
+    ctx.fillStyle=style.getPropertyValue('--text'); ctx.font=`${12*devicePixelRatio}px system-ui, sans-serif`;
+    ctx.fillText(String(data[i]), x, y-6*devicePixelRatio);
+    ctx.fillText(labels[i]||"", x, h-padding+14*devicePixelRatio);
+  }
+}
+
+/* ---------------- Settings ---------------- */
+byId("exportJSON").onclick=()=>{ const a=document.createElement("a"); a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state,null,2)); a.download="backup.json"; a.click(); }
+byId("importJSON").onchange=async e=>{
+  const f=e.target.files?.[0]; if(!f) return; const txt=await f.text();
+  try{ const next=JSON.parse(txt); state=Object.assign(defaultState(), next); save(); initAll(); toast("복원 완료"); }catch(err){ toast("복원 실패", String(err)) }
+}
+byId("resetAll").onclick=()=>{ if(confirm("모든 데이터를 초기화할까요?")){ state=defaultState(); save(); initAll(); toast("초기화 완료") } }
+
+/* ---------------- Init ---------------- */
+function initAll(){
+  setPreset(state.settings.preset || "classic");
+  toggleDark(!!state.settings.dark);
+  applyHue(state.settings.hue ?? 30);
+
+  drawDash(); renderCalendar(); renderKanban(); renderFiles();
+  renderProgress(); renderPlans(); renderAssess(); renderMinAchv();
+
+  // 기본 활성 섹션
+  document.querySelectorAll("section").forEach(s=> s.classList.remove("active"));
+  byId("dash").classList.add("active");
+  document.querySelectorAll("[data-target]").forEach(b=> b.classList.remove("active"));
+  document.querySelectorAll("[data-target='dash']").forEach(b=> b.classList.add("active"));
+  
+  ensureMaTable();
+  renderMinAchv();
+}   
+
+// =================== 초기 활성 섹션 설정 & 초기화 호출 ===================
+function setDefaultActive(){
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  byId("dash").classList.add("active");
+  document.querySelectorAll("[data-target]").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("[data-target='dash']").forEach(b => b.classList.add("active"));
+}
+
+setDefaultActive();
+initAll();
+</script>
+</body>
+</html>
