@@ -350,13 +350,13 @@ select.input option{
 @media (max-width: 1200px){
   #maTable th, #maTable td{ white-space: normal; }
 }
-  
+
 /* 평가 테이블: 자동 레이아웃 + 필드 폭 안정화 */
 #assTable { table-layout:auto; width:100%; }
 #assTable input, #assTable select{
   width:100%; max-width:100%; height:34px; box-sizing:border-box;
 }
-  
+
 /* 유형 드롭다운(단원/수행) — 전역 영향 차단 + 기본 표시 보장 */
 #assTable select[data-field="type"]{
   all: unset;
@@ -419,6 +419,7 @@ section#assess table.table:not(#assTable) {
 /* (참고) 제목/내용도 조금 더 여유 주고 싶으면: */
 #maTable td:nth-child(2) input{ min-width: 240px; }
 #maTable td:nth-child(6) input{ min-width: 240px; }
+  
 /* [평가] 카드 밖으로 못 나가게 + 스크롤은 래퍼 안에서만 */
 #assessSection, #assess, section#assess, [data-section="assess"]{
   position: relative;
@@ -1247,6 +1248,11 @@ byId("asImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
   save(); renderAssess(); toast("가져오기 완료","평가가 반영되었습니다.");
 });
 function ensureAssTable(){
+  if (document.getElementById("assTable")) return;
+  const host =
+    document.getElementById("assessSection") ||
+    document.getElementById("assess") ||
+    document.querySelector('section#assess') ||
   const existed = document.getElementById("assTable-wrapper");
   const table   = document.getElementById("assTable");
 
@@ -1268,6 +1274,27 @@ function ensureAssTable(){
 
   // 3) 없으면 새로 생성해서 "카드 내부"에 삽입
   const wrap = document.createElement("div");
+wrap.id = "assTable-wrapper";
+wrap.innerHTML = `
+  <table id="assTable" class="table" style="margin-top:10px; width:100%">
+    <thead>
+      <tr>
+        <th>제목</th>
+        <th>유형</th>
+        <th>범위</th>
+        <th>날짜</th>
+        <th>반</th>
+        <th>과목</th>
+        <th>미응시</th>
+        <th>보충(일시/장)</th>
+        <th>메모</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+`;
+host.appendChild(wrap);
   wrap.id = "assTable-wrapper";
   wrap.innerHTML = `
     <table id="assTable" class="table" style="margin-top:10px; width:100%">
@@ -1607,7 +1634,7 @@ function initAll(){
   byId("dash").classList.add("active");
   document.querySelectorAll("[data-target]").forEach(b=> b.classList.remove("active"));
   document.querySelectorAll("[data-target='dash']").forEach(b=> b.classList.add("active"));
-  
+
   ensureMaTable();
   renderMinAchv();
 }   
@@ -1626,9 +1653,3 @@ initAll();
 </body>
 
 </html>
-
-
-
-
-
-
