@@ -1199,8 +1199,9 @@ function renderAssess(){
   const table = document.getElementById("assTable");
   if (!table) return;
 
-  // 헤더를 고정 구조로 재설정(기존 꼬임 방지)
-  table.tHead.innerHTML = `
+   // ① thead를 우리가 쓰는 헤더로 '항상' 재구성  (시간/장소 없음)
+  const thead = table.tHead || table.createTHead();
+  thead.innerHTML = `
     <tr>
       <th>제목</th>
       <th>유형</th>
@@ -1210,16 +1211,19 @@ function renderAssess(){
       <th>과목</th>
       <th>미응시</th>
       <th>보충(일시/장)</th>
-      <th>시간</th>
-      <th>장소</th>
       <th>메모</th>
       <th></th>
     </tr>
   `;
 
-  const tbody = table.tBodies[0];
-  tbody.innerHTML = "";
+  // ② tbody에 실수로 들어간 헤더행(th 포함 tr)만 제거
+  const tbody = table.tBodies[0] || table.createTBody();
+  [...tbody.querySelectorAll("tr")].forEach(tr => {
+    if (tr.querySelector("th")) tr.remove();
+  });
 
+  // ③ 내용 다시 그림
+  tbody.innerHTML = "";
   (state.assess || []).forEach(a => addAssessRow(a));
 }
 
@@ -1525,3 +1529,4 @@ initAll();
 </body>
 
 </html>
+
