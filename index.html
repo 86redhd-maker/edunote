@@ -419,7 +419,46 @@ section#assess table.table:not(#assTable) {
 /* (참고) 제목/내용도 조금 더 여유 주고 싶으면: */
 #maTable td:nth-child(2) input{ min-width: 240px; }
 #maTable td:nth-child(6) input{ min-width: 240px; }
-  
+/* [평가] 카드 밖으로 못 나가게 + 스크롤은 래퍼 안에서만 */
+#assessSection, #assess, section#assess, [data-section="assess"]{
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+}
+#assTable-wrapper{
+  max-width: 100%;
+  overflow-x: auto;
+  padding-right: 8px;
+}
+#assTable{
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+#assTable th, #assTable td{ padding:8px; white-space: nowrap; }
+@media (max-width: 1200px){
+  #assTable th, #assTable td{ white-space: normal; }
+}
+
+/* [보장지도] 카드 밖으로 못 나가게 + 스크롤은 래퍼 안에서 */
+#minAchvSection, #minAchv, section#min, [data-section="min"]{
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+}
+#maTable-wrapper{ max-width:100%; overflow-x:auto; padding-right:8px; }
+#maTable{ width:100%; max-width:100%; table-layout:auto; border-collapse:collapse; }
+#maTable th, #maTable td{ padding:8px; white-space: nowrap; }
+@media (max-width: 1200px){
+  #maTable th, #maTable td{ white-space: normal; }
+}
+
+/* 보장지도: 과목(5열) 넓히되, 전체는 카드 안에 머물도록 */
+#maTable td:nth-child(5) input{
+  min-width: 160px;   /* 너무 크면 180~220px로 단계적으로 올리세요 */
+  width: 190px;
+}  
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -1208,35 +1247,48 @@ byId("asImport").onchange=e=> importCSV(e.target.files?.[0], rows=>{
   save(); renderAssess(); toast("가져오기 완료","평가가 반영되었습니다.");
 });
 function ensureAssTable(){
-  if (document.getElementById("assTable")) return;
-  const host =
-    document.getElementById("assessSection") ||
-    document.getElementById("assess") ||
-    document.querySelector('section#assess') ||
+  const existed = document.getElementById("assTable-wrapper");
+  const table   = document.getElementById("assTable");
+
+  // 1) 앵커(컨트롤있는 카드) 탐색 우선순위: 명시 ID → 컨트롤 근처 → 섹션 → fallback
+  const anchor =
+    document.getElementById("assControls") ||
+    (document.getElementById("assSubject") && document.getElementById("assSubject").closest(".card, section, div")) ||
+    (document.getElementById("assClass")   && document.getElementById("assClass").closest(".card, section, div"))   ||
+    document.querySelector('#assessSection, #assess, section#assess, [data-section="assess"]') ||
+    document.querySelector('[data-target="assess"]')?.closest('section') ||
+    document.querySelector('[data-target="평가"]')?.closest('section') ||
     document.body;
 
+  // 2) 이미 존재하면 "카드 내부"로 이동만
+  if (existed){
+    if (!anchor.contains(existed)) anchor.appendChild(existed);
+    return;
+  }
+
+  // 3) 없으면 새로 생성해서 "카드 내부"에 삽입
   const wrap = document.createElement("div");
-wrap.id = "assTable-wrapper";
-wrap.innerHTML = `
-  <table id="assTable" class="table" style="margin-top:10px; width:100%">
-    <thead>
-      <tr>
-        <th>제목</th>
-        <th>유형</th>
-        <th>범위</th>
-        <th>날짜</th>
-        <th>반</th>
-        <th>과목</th>
-        <th>미응시</th>
-        <th>보충(일시/장)</th>
-        <th>메모</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-`;
-host.appendChild(wrap);
+  wrap.id = "assTable-wrapper";
+  wrap.innerHTML = `
+    <table id="assTable" class="table" style="margin-top:10px; width:100%">
+      <thead>
+        <tr>
+          <th>제목</th>
+          <th>유형</th>
+          <th>범위</th>
+          <th>날짜</th>
+          <th>반</th>
+          <th>과목</th>
+          <th>미응시</th>
+          <th>보충(일시/장)</th>
+          <th>메모</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  `;
+  anchor.appendChild(wrap);
 }
 
 // ★ 평가 표 렌더: 헤더 이중 제거 + 시간/장소 없는 정답 구조로 재구성
@@ -1574,6 +1626,7 @@ initAll();
 </body>
 
 </html>
+
 
 
 
