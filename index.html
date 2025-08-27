@@ -460,6 +460,43 @@ section#assess table.table:not(#assTable) {
   min-width: 160px;   /* 너무 크면 180~220px로 단계적으로 올리세요 */
   width: 190px;
 }  
+/* 평가 섹션에서 id가 assTable이 아닌 표(옛 헤더표)는 감춤 */
+#assessSection table.table:not(#assTable),
+#assess table.table:not(#assTable),
+section#assess table.table:not(#assTable) {
+  display: none !important;
+}
+
+/* 평가·보충 카드 내부 테이블이 배경을 벗어나지 않도록 */
+#assessSection, #assess, section#assess, [data-section="assess"]{
+  position: relative;
+  overflow: hidden;           /* 둥근 모서리 밖으로 새지 않음 */
+  border-radius: 16px;        /* 카드 모서리 유지 */
+}
+
+/* 평가 테이블은 래퍼 안에서만 가로 스크롤 허용 */
+#assTable-wrapper{
+  max-width: 100%;
+  overflow-x: auto;           /* 폭이 좁을 때 가로 스크롤 */
+  padding-right: 8px;         /* 우측 버튼 겹침 방지용 여백 */
+}
+
+/* 테이블은 카드 폭 안에서만 그리기 */
+#assTable{
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+#assTable th, #assTable td{
+  padding: 8px;
+  white-space: nowrap;        /* 한 줄 표시(넘치면 래퍼가 스크롤) */
+}
+
+/* 화면이 많이 좁으면 줄바꿈 허용해 넘침 더 줄이기 */
+@media (max-width: 1200px){
+  #assTable th, #assTable td{ white-space: normal; }
+}  
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -1624,4 +1661,5 @@ initAll();
 </body>
 
 </html>
+
 
