@@ -1886,7 +1886,7 @@ function setDefaultActive(){
 setDefaultActive();
 initAll();
 
-// ★ 초기 1회 강제 하이드레이션 (렌더 직후)
+  // initAll() 호출 직후에 한 번 더 하이드레이트
   setTimeout(() => {
     if (window.hydrateResponsiveTables) window.hydrateResponsiveTables();
   }, 0);
@@ -1894,32 +1894,45 @@ initAll();
 </script>
 <script>
 (function(){
-  // 표의 헤더 텍스트를 각 셀의 data-label에 채워 넣어 모바일 카드화
-  window.hydrateResponsiveTables = function(){
-    document.querySelectorAll('table.responsive').forEach(table=>{
-      const headers = Array.from(table.querySelectorAll('thead th'))
-        .map(th=>th.textContent.trim());
+/** 표를 모바일 카드형으로 변환: data-label 채우고 .table-wrap로 감싸기 */
+window.hydrateResponsiveTables = function(){
+  document.querySelectorAll('table.responsive').forEach(table=>{
+    // 0) thead 없거나 비었으면 스킵
+    const ths = table.tHead ? Array.from(table.tHead.querySelectorAll('th')) : [];
+    if (!ths.length) return;
 
-      // 각 셀에 data-label 채우기 (이미 있으면 유지)
-      table.querySelectorAll('tbody tr').forEach(tr=>{
-        Array.from(tr.children).forEach((td, i)=>{
-          if(!td.hasAttribute('data-label')) {
-            td.setAttribute('data-label', headers[i] || '');
-          }
-        });
+    // 1) 헤더 텍스트 수집
+    const headers = ths.map(th=> (th.textContent||'').trim());
+
+    // 2) 각 td에 data-label 주입
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      Array.from(tr.children).forEach((td, i)=>{
+        if (td.nodeName !== 'TD') return;
+        const label = headers[i] || '';
+        // 이미 라벨이 있는데 빈 값이면 보강
+        const need = !td.hasAttribute('data-label') || !td.getAttribute('data-label');
+        if (need) td.setAttribute('data-label', label);
       });
-
-      // 가로 스크롤 래퍼가 없으면 감싸기 (가드 포함)
-      const parent = table.parentElement;
-      const alreadyWrapped = parent && parent.classList && parent.classList.contains('table-wrap');
-      if(!alreadyWrapped){
-        const wrap = document.createElement('div');
-        wrap.className = 'table-wrap';
-        table.replaceWith(wrap);
-        wrap.appendChild(table);
-      }
     });
-  };
+
+    // 3) 가로스크롤 래퍼 보장
+    if (!table.parentElement || !table.parentElement.classList.contains('table-wrap')) {
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      table.replaceWith(wrap);
+      wrap.appendChild(table);
+    }
+  });
+};
+
+/** 표 내용이 바뀌어도 자동 재적용(옵저버) */
+(function observeResponsiveTables(){
+  const observer = new MutationObserver(()=> {
+    // 동시 다발 수정 시 과도 호출 방지 (마이크로태스크 큐로 밀기)
+    Promise.resolve().then(()=> window.hydrateResponsiveTables && window.hydrateResponsiveTables());
+  });
+  observer.observe(document.body, { childList:true, subtree:true });
+})();
 
   // 가로 필터/버튼 바에 .h-scroll 부여 (선택적으로 클래스명 교체)
   function enhanceHorizontalBars(){
