@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>교무행정 · 따뜻한 교사용 MVP+</title>
 <meta name="description" content="교사용 진도/계획·평가/보충·행사 메모·업무·자료실 통합 데모(오프라인 단일 파일)" />
 <style>
@@ -571,6 +571,98 @@ section#assess table.table:not(#assTable) {
 @media (max-width: 1200px){
   #assTable th, #assTable td{ white-space: normal; }
 }  
+
+/* ==== Mobile-first 개선 공통 ==== */
+:root{
+  --space-1: .5rem; --space-2: .75rem; --space-3: 1rem; --space-4: 1.25rem;
+  --radius: 12px;
+}
+*{ box-sizing:border-box; touch-action:manipulation }
+html{ font-size:16px }
+body{ margin:0; line-height:1.45; -webkit-font-smoothing:antialiased; }
+img,svg,video{ max-width:100%; height:auto }
+
+/* 헤더/내비 기본 */
+header, .topbar{ position:sticky; top:0; z-index:20; backdrop-filter:saturate(180%) blur(8px); }
+header{ background:color-mix(in srgb, Canvas 85%, transparent) }
+
+/* 가로로 길게 나열된 필터/버튼 바는 터치 스크롤 가능 */
+.h-scroll{ display:flex; gap:.5rem; overflow-x:auto; -webkit-overflow-scrolling:touch; padding: var(--space-2) var(--space-3) }
+.h-scroll > *{ flex:0 0 auto }
+
+/* 카드 섹션 공통 */
+.section, .card{
+  background: color-mix(in oklab, Canvas 96%, black 0%);
+  border:1px solid color-mix(in oklab, CanvasText 12%, transparent);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  box-shadow: 0 1px 12px rgba(0,0,0,.04);
+  margin-bottom: var(--space-3);
+}
+
+/* 폼 요소 터치 타깃 확대 */
+button, .btn, input, select, textarea{
+  min-height:44px; font:inherit;
+}
+label{ font-size:.95rem }
+
+/* 테이블 안전 가로 스크롤 래퍼 */
+.table-wrap{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius: var(--radius); }
+.table-wrap table{ width:100%; border-collapse: collapse; }
+
+/* 모바일에서 표를 '카드'처럼 보여주기 (data-label 필요) */
+@media (max-width: 768px){
+  .container{ padding: var(--space-3) }
+  .grid{ display:grid; grid-template-columns: 1fr; gap: var(--space-3) }
+
+  /* 중복 탭/네비가 있다면 텍스트형 탭은 숨김 (필요 시 클래스 조정) */
+  .nav--text{ display:none }
+
+  /* 표 → 카드화 */
+  table.responsive{ border:0 }
+  table.responsive thead{ display:none }
+  table.responsive tr{
+    display:block;
+    background: color-mix(in oklab, Canvas 98%, black 0%);
+    border:1px solid color-mix(in oklab, CanvasText 10%, transparent);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  table.responsive td{
+    display:grid; grid-template-columns: 9rem 1fr;
+    padding: .4rem 0; border:0; border-bottom:1px dotted color-mix(in srgb, CanvasText 15%, transparent);
+  }
+  table.responsive td:last-child{ border-bottom:0 }
+  table.responsive td::before{
+    content: attr(data-label);
+    font-weight:600; opacity:.75; padding-right: .75rem;
+  }
+
+  /* 액션바/버튼 묶음은 한 줄 넘치면 스크롤 */
+  .actions{ display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem }
+
+  /* 모달/팝업 크기 보정 */
+  .modal{ width: min(100%, 620px); margin:0 auto; inset:auto 0 0 0; border-radius:16px 16px 0 0 }
+}
+
+/* iOS safe area 처리 (하단 고정 탭 쓸 때) */
+@supports (padding: max(0px)) {
+  .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), .5rem) }
+}
+
+/* 하단 고정 탭바 (선택 사항) */
+@media (max-width: 768px){
+  .tabbar{
+    position:fixed; bottom:0; left:0; right:0; z-index:30;
+    background: color-mix(in oklab, Canvas 92%, black 0%);
+    border-top:1px solid color-mix(in oklab, CanvasText 12%, transparent);
+  }
+  .tabbar ul{ display:grid; grid-template-columns: repeat(7, 1fr); margin:0; padding:.25rem; list-style:none }
+  .tabbar a{
+    display:grid; place-items:center; gap:.15rem; padding:.5rem 0; font-size:.8rem; text-decoration:none; color:inherit
+  }
+}
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -795,7 +887,8 @@ section#assess table.table:not(#assTable) {
           <label class="btn" for="pImport">CSV 가져오기</label>
           <input id="pImport" type="file" accept=".csv" style="display:none" />
         </div>
-        <table class="table" id="pTable" style="margin-top:10px">
+        <!-- Progress -->
+<table class="table responsive" id="pTable" style="margin-top:10px">
           <thead><tr>
             <th>주차</th><th>날짜</th><th>차시</th><th>단원/범위</th><th>목표</th><th>활동/자료</th><th>과제</th><th>메모</th><th></th>
           </tr></thead>
@@ -825,7 +918,8 @@ section#assess table.table:not(#assTable) {
           <label class="btn" for="plImport">CSV 가져오기</label>
           <input id="plImport" type="file" accept=".csv" style="display:none" />
         </div>
-        <table class="table" id="plTable" style="margin-top:10px">
+        <!-- Plans -->
+<table class="table responsive" id="plTable" style="margin-top:10px">
           <thead><tr>
             <th>차시</th><th>주차</th><th>날짜</th><th>목표</th><th>핵심개념</th><th>준비물</th><th>자료링크</th><th>평가방법</th><th></th>
           </tr></thead>
@@ -847,7 +941,8 @@ section#assess table.table:not(#assTable) {
           <label class="btn" for="asImport">CSV 가져오기</label>
           <input id="asImport" type="file" accept=".csv" style="display:none" />
         </div>
-        <table class="table" id="asTable" style="margin-top:10px">
+        <!-- Assess -->
+<table class="table responsive" id="asTable" style="margin-top:10px">
   <thead>
     <tr>
       <th>제목</th><th>유형</th><th>범위</th><th>날짜</th><th>반</th><th>과목</th><th>미응시</th><th>보충(일/시/장)</th><th>메모</th><th></th>
@@ -871,7 +966,8 @@ section#assess table.table:not(#assTable) {
           <label class="btn" for="maImport">CSV 가져오기</label>
           <input id="maImport" type="file" accept=".csv" style="display:none" />
         </div>
-        <table class="table" id="maTable" style="margin-top:10px">
+        <!-- Minimum Achievement -->
+<table class="table responsive" id="maTable" style="margin-top:10px">
           <thead><tr>
             <th>모드</th><th>제목</th><th>날짜</th><th>시간</th><th>반</th><th>과목</th><th>내용</th><th>대상</th><th>후속평가</th><th>참여</th><th>재평가</th><th>개선</th><th></th>
           </tr></thead>
@@ -1732,9 +1828,66 @@ function setDefaultActive(){
 setDefaultActive();
 initAll();
 </script>
+<script>
+(function(){
+  // 표의 헤더 텍스트를 각 셀의 data-label에 채워 넣어 모바일 카드화
+  function hydrateResponsiveTables(){
+    document.querySelectorAll('table.responsive').forEach(table=>{
+      const headers = Array.from(table.querySelectorAll('thead th')).map(th=>th.textContent.trim());
+      table.querySelectorAll('tbody tr').forEach(tr=>{
+        Array.from(tr.children).forEach((td, i)=>{
+          if(!td.hasAttribute('data-label')) td.setAttribute('data-label', headers[i] || '');
+        });
+      });
+      // 가로 스크롤 래퍼가 없으면 감싸기
+      if(!table.parentElement.classList.contains('table-wrap')){
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        table.replaceWith(wrap);
+        wrap.appendChild(table);
+      }
+    });
+  }
+
+  // 가로 필터/버튼 바에 .h-scroll 부여 (선택적으로 클래스명 교체)
+  function enhanceHorizontalBars(){
+    document.querySelectorAll('.filters, .toolbar, .chips, .actions-bar').forEach(el=>{
+      el.classList.add('h-scroll');
+    });
+  }
+
+  // 하단 탭바 생성 (원한다면)
+  function mountTabbar(){
+    if(document.querySelector('.tabbar')) return;
+    const tabs = [
+      {id:'dashboard', label:'대시보드', emoji:'🏠'},
+      {id:'schedule',  label:'일정',     emoji:'📅'},
+      {id:'tasks',     label:'업무',     emoji:'🗂️'},
+      {id:'library',   label:'자료실',   emoji:'📁'},
+      {id:'plan',      label:'진도',     emoji:'📘'},
+      {id:'assess',    label:'평가',     emoji:'✅'},
+      {id:'settings',  label:'설정',     emoji:'⚙️'},
+    ];
+    const bar = document.createElement('nav');
+    bar.className='tabbar safe-bottom';
+    bar.innerHTML = '<ul>' + tabs.map(t=>(
+      `<li><a href="#${t.id}" aria-label="${t.label}"><span>${t.emoji}</span><small>${t.label}</small></a></li>`
+    )).join('') + '</ul>';
+    document.body.appendChild(bar);
+  }
+
+  function run(){
+    hydrateResponsiveTables();
+    enhanceHorizontalBars();
+    mountTabbar();
+  }
+  document.readyState!=='loading' ? run() : document.addEventListener('DOMContentLoaded', run);
+})();
+</script>
 </body>
 
 </html>
+
 
 
 
