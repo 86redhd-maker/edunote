@@ -1356,6 +1356,7 @@ function renderProgress(){
   const y=Number(byId("pYear").value), t=Number(byId("pTerm").value), s=byId("pSubject").value.trim(), c=byId("pClass").value.trim();
   const rows = state.progress.filter(p=> (!y||p.year==y)&&(!t||p.term==t)&&(!s||p.subject==s)&&(!c||p.class==c)).sort((a,b)=> new Date(a.date)-new Date(b.date) || (a.period-b.period));
   rows.forEach(p=> addProgressRow(p, true));
+  afterRenderTables();
 }
 function addProgressRow(p, append=false){
   if(!p.id){ p.id=rid(); state.progress.push(p); save() }
@@ -1421,6 +1422,7 @@ function renderPlans(){
   const y=Number(byId("plYear").value), t=Number(byId("plTerm").value), s=byId("plSubject").value.trim(), c=byId("plClass").value.trim();
   const rows = state.plans.filter(p=> (!y||p.year==y)&&(!t||p.term==t)&&(!s||p.subject==s)&&(!c||p.class==c)).sort((a,b)=> (a.period-b.period) || new Date(a.date)-new Date(b.date));
   rows.forEach(p=> addPlanRow(p, true));
+  afterRenderTables();
 }
 function addPlanRow(p, append=false){
   if(!p.id){ p.id=rid(); state.plans.push(p); save() }
@@ -1535,6 +1537,7 @@ function renderAssess(){
 
   const tbody = table.tBodies[0];
   (state.assess || []).forEach(a => addAssessRow(a));
+  afterRenderTables();
 }
 
 // ★ 평가 행 추가: 시간/장소 제거, 메모 1칸만 사용
@@ -1696,6 +1699,7 @@ function renderMinAchv(){
     .filter(m => (!s || m.subject === s) && (!c || m.class === c))
     .sort((a,b)=> new Date(a.date||"2100-01-01") - new Date(b.date||"2100-01-01"))
     .forEach(m => addMArow(m, true));
+  afterRenderTables();
 }
 
 // ── (C) 행 추가 함수: (시간/후속/참여/재평가/개선 제거 + '대상' 확장 구조) ──
@@ -1789,6 +1793,11 @@ function drawBar(ctx, labels, data){
     ctx.fillText(labels[i]||"", x, h-padding+14*devicePixelRatio);
   }
 }
+  function afterRenderTables(){
+  document.querySelectorAll('#pTable,#plTable,#assTable,#maTable')
+    .forEach(t => t && t.classList.add('responsive'));
+  if (typeof hydrateResponsiveTables === 'function') hydrateResponsiveTables();
+}
 
 /* ---------------- Settings ---------------- */
 byId("exportJSON").onclick=()=>{ const a=document.createElement("a"); a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state,null,2)); a.download="backup.json"; a.click(); }
@@ -1859,27 +1868,35 @@ initAll();
   // 하단 탭바 생성 (원한다면)
   function mountTabbar(){
     if(document.querySelector('.tabbar')) return;
+    // ★ 실제 섹션 id에 맞춤
     const tabs = [
-      {id:'dashboard', label:'대시보드', emoji:'🏠'},
-      {id:'schedule',  label:'일정',     emoji:'📅'},
-      {id:'tasks',     label:'업무',     emoji:'🗂️'},
-      {id:'library',   label:'자료실',   emoji:'📁'},
-      {id:'plan',      label:'진도',     emoji:'📘'},
-      {id:'assess',    label:'평가',     emoji:'✅'},
-      {id:'settings',  label:'설정',     emoji:'⚙️'},
+      {id:'dash',     label:'대시보드', emoji:'🏠'},
+      {id:'calendar', label:'일정',     emoji:'📅'},
+      {id:'tasks',    label:'업무',     emoji:'🗂️'},
+      {id:'files',    label:'자료실',   emoji:'📁'},
+      {id:'progress', label:'진도',     emoji:'📘'},
+      {id:'plans',    label:'계획',     emoji:'📝'},
+      {id:'assess',   label:'평가',     emoji:'✅'},
+      {id:'minachv',  label:'보장지도', emoji:'🌱'},
+      {id:'settings', label:'설정',     emoji:'⚙️'},
     ];
     const bar = document.createElement('nav');
     bar.className='tabbar safe-bottom';
-    bar.innerHTML = '<ul>' + tabs.map(t=>(
-      `<li><a href="#${t.id}" aria-label="${t.label}"><span>${t.emoji}</span><small>${t.label}</small></a></li>`
-    )).join('') + '</ul>';
+    // ★ a(href) 대신 button + data-target로 만들고, 기존 bindNav 재사용
+    bar.innerHTML = '<ul>' + tabs.map(t =>
+      `<li><button class="navlink" data-target="${t.id}" aria-label="${t.label}">
+         <span>${t.emoji}</span><small>${t.label}</small>
+       </button></li>`
+    ).join('') + '</ul>';
     document.body.appendChild(bar);
+    // 기존 bindNav를 연결 (파일 상단에 이미 정의됨)
+    if (typeof bindNav === 'function') bindNav(bar);
   }
 
   function run(){
     hydrateResponsiveTables();
     enhanceHorizontalBars();
-    mountTabbar();
+    mountTabbar(); // 탭바 쓰려면 이 줄 유지
   }
   document.readyState!=='loading' ? run() : document.addEventListener('DOMContentLoaded', run);
 })();
@@ -1887,6 +1904,7 @@ initAll();
 </body>
 
 </html>
+
 
 
 
