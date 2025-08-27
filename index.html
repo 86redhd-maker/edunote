@@ -1885,6 +1885,12 @@ function setDefaultActive(){
 
 setDefaultActive();
 initAll();
+
+// ★ 초기 1회 강제 하이드레이션 (렌더 직후)
+  setTimeout(() => {
+    if (window.hydrateResponsiveTables) window.hydrateResponsiveTables();
+  }, 0);
+
 </script>
 <script>
 (function(){
