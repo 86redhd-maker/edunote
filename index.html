@@ -663,6 +663,55 @@ label{ font-size:.95rem }
     display:grid; place-items:center; gap:.15rem; padding:.5rem 0; font-size:.8rem; text-decoration:none; color:inherit
   }
 }
+  /* === 모바일 전용: 상단/좌측 메뉴 숨기고, 하단 탭바 슬림 + 라벨 표시 === */
+@media (max-width: 768px){
+  /* 상단/좌측 네비 숨김 */
+  header.top,
+  header.side,
+  #dock { display: none !important; }
+
+  /* 본문이 탭바에 가려지지 않게 하단 여백 확보 */
+  main{ 
+    margin: 16px auto 0;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+
+  /* 하단 탭바 스타일 */
+  .tabbar{
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: color-mix(in oklab, Canvas 92%, black 0%);
+    border-top: 1px solid color-mix(in oklab, CanvasText 12%, transparent);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar ul{
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    margin: 0; padding: 4px; list-style: none;
+  }
+  .tabbar a,
+  .tabbar button{
+    display: grid; place-items: center; gap: 2px;
+    padding: 6px 0;
+    font-size: 12px;
+    line-height: 1.2;
+    text-decoration: none; color: inherit; 
+    background: none; border: 0; cursor: pointer;
+    min-height: 44px; /* 터치 영역 확보 */
+  }
+  /* 라벨(작게 표시) */
+  .tabbar small{
+    font-size: 10px;
+    opacity: .8;
+    line-height: 1;
+  }
+
+  /* 활성 탭 강조 */
+  .tabbar .navlink.active{
+    background: color-mix(in oklab, Canvas 98%, black 0%);
+    border: 1px solid color-mix(in oklab, CanvasText 12%, transparent);
+    border-radius: 10px;
+  }
+}
 </style>
 </head>
 <body class="theme-classic" data-theme="light">
@@ -1904,6 +1953,7 @@ initAll();
 </body>
 
 </html>
+
 
 
 
