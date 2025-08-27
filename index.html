@@ -1889,23 +1889,31 @@ initAll();
 <script>
 (function(){
   // 표의 헤더 텍스트를 각 셀의 data-label에 채워 넣어 모바일 카드화
-  function hydrateResponsiveTables(){
+  window.hydrateResponsiveTables = function(){
     document.querySelectorAll('table.responsive').forEach(table=>{
-      const headers = Array.from(table.querySelectorAll('thead th')).map(th=>th.textContent.trim());
+      const headers = Array.from(table.querySelectorAll('thead th'))
+        .map(th=>th.textContent.trim());
+
+      // 각 셀에 data-label 채우기 (이미 있으면 유지)
       table.querySelectorAll('tbody tr').forEach(tr=>{
         Array.from(tr.children).forEach((td, i)=>{
-          if(!td.hasAttribute('data-label')) td.setAttribute('data-label', headers[i] || '');
+          if(!td.hasAttribute('data-label')) {
+            td.setAttribute('data-label', headers[i] || '');
+          }
         });
       });
-      // 가로 스크롤 래퍼가 없으면 감싸기
-      if(!table.parentElement.classList.contains('table-wrap')){
+
+      // 가로 스크롤 래퍼가 없으면 감싸기 (가드 포함)
+      const parent = table.parentElement;
+      const alreadyWrapped = parent && parent.classList && parent.classList.contains('table-wrap');
+      if(!alreadyWrapped){
         const wrap = document.createElement('div');
         wrap.className = 'table-wrap';
         table.replaceWith(wrap);
         wrap.appendChild(table);
       }
     });
-  }
+  };
 
   // 가로 필터/버튼 바에 .h-scroll 부여 (선택적으로 클래스명 교체)
   function enhanceHorizontalBars(){
@@ -1917,7 +1925,6 @@ initAll();
   // 하단 탭바 생성 (원한다면)
   function mountTabbar(){
     if(document.querySelector('.tabbar')) return;
-    // ★ 실제 섹션 id에 맞춤
     const tabs = [
       {id:'dash',     label:'대시보드', emoji:'🏠'},
       {id:'calendar', label:'일정',     emoji:'📅'},
@@ -1931,28 +1938,28 @@ initAll();
     ];
     const bar = document.createElement('nav');
     bar.className='tabbar safe-bottom';
-    // ★ a(href) 대신 button + data-target로 만들고, 기존 bindNav 재사용
     bar.innerHTML = '<ul>' + tabs.map(t =>
       `<li><button class="navlink" data-target="${t.id}" aria-label="${t.label}">
          <span>${t.emoji}</span><small>${t.label}</small>
        </button></li>`
     ).join('') + '</ul>';
     document.body.appendChild(bar);
-    // 기존 bindNav를 연결 (파일 상단에 이미 정의됨)
     if (typeof bindNav === 'function') bindNav(bar);
   }
 
   function run(){
-    hydrateResponsiveTables();
+    window.hydrateResponsiveTables();
     enhanceHorizontalBars();
-    mountTabbar(); // 탭바 쓰려면 이 줄 유지
+    mountTabbar(); // 탭바 쓰려면 유지
   }
+
   document.readyState!=='loading' ? run() : document.addEventListener('DOMContentLoaded', run);
 })();
 </script>
 </body>
 
 </html>
+
 
 
 
